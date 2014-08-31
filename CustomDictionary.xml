@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- Common code analysis dictionary for SpanglerCo. Include in the project and set the build action to CodeAnalysisDictionary. -->
+<!-- See syntax at http://msdn.microsoft.com/en-us/library/bb514188.aspx -->
+<Dictionary>
+  <Words>
+    <Recognized>
+      <Word>IPC</Word>
+      <Word>MVC</Word>
+    </Recognized>
+  </Words>
+  <Acronyms>
+    <CasingExceptions>
+      <Acronym>Co</Acronym>
+    </CasingExceptions>
+  </Acronyms>
+</Dictionary>

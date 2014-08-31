@@ -70,7 +70,9 @@ The csproj file has been configured to look for a SigningKey environment variabl
 
 1. Open the solution and manually edit the AssemblyHost project to choose your key then build the Debug, Release, or Analysis configurations.
 2. Open a command prompt, set the SigningKey environment variable to the path of your key, launch Visual Studio from the command prompt, then build any of the configurations.
-3. Open a Visual Studio command prompt, set the SigningKey environment variable to the path of your key, then run msbuild from the directory containing the solution (e.g. `msbuild /t:AssemblyHost /p:Configuration=Release`).
+3. Open a Visual Studio command prompt, set the SigningKey environment variable to the path of your key, then run msbuild from the directory containing the solution (e.g. `msbuild /p:Configuration=Release`).
+
+__Note:__ Be sure to do a clean build when switching between Signed and Unsigned builds. In Visual Studio, this means Build->Clean. For msbuild, use `msbuild /t:Clean /p:Configuration=Release`.
 
 ## Code Analysis
 

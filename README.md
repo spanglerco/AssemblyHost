@@ -74,6 +74,8 @@ The csproj file has been configured to look for a SigningKey environment variabl
 
 __Note:__ Be sure to do a clean build when switching between Signed and Unsigned builds. In Visual Studio, this means Build->Clean. For msbuild, use `msbuild /t:Clean /p:Configuration=Release`.
 
+You can verify if the build assembly is signed or not by opening a Visual Studio command prompt and running `sn -T <path-to-AssemblyHost.exe>`. For an unsigned build, you get a message indicating it is not strongly named. For a signed build, you will see the public token which should correspond to the key used to sign it.
+
 ## Code Analysis
 
 The Analysis build configuration has code analysis enabled. Note that this configuration should not be used when building an unsigned assembly or you will receive a large number of warnings.

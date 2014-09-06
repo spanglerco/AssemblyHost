@@ -15,8 +15,8 @@
 // along with AssemblyHost.  If not, see <http://www.gnu.org/licenses/>.
 
 using System;
-using System.Threading;
 using System.ServiceModel;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -211,12 +211,11 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                         Assert.IsTrue(server.ParseCommands(WCFArgs(typeof(MockWcfService), serviceUri), child));
                         Assert.IsTrue(server.Execute(child));
                         Assert.IsTrue(parent.SendMessage(MessageType.NotSet));
-                        Thread thread = new Thread(() => { Assert.IsTrue(server.WaitForSignal(child)); });
-                        thread.Start();
+                        Task thread = Task.Factory.StartNew(() => { Assert.IsTrue(server.WaitForSignal(child)); });
                         Assert.IsTrue(parent.SendMessage(MessageType.NotSet));
-                        Assert.IsFalse(thread.Join(500));
+                        Assert.IsFalse(thread.Wait(500));
                         Assert.IsTrue(parent.SendMessage(MessageType.SignalTerminate));
-                        Assert.IsTrue(thread.Join(100));
+                        Assert.IsTrue(thread.Wait(100));
                     }
 
                     using (WcfHostServer server = new WcfHostServer())

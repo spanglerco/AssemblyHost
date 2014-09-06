@@ -46,6 +46,8 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                 bool expectEndError = false;
                 bool expectExecuteError = false;
                 HostProcessStatus expectedStatus = HostProcessStatus.NotStarted;
+
+                // Event handler to verify status changes are correct.
                 EventHandler statusChanged = new EventHandler((sender, args) =>
                 {
                     try
@@ -89,6 +91,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                     int numProgress = 0;
                     ExecutionMode mode = ((IChildProcess)Activator.CreateInstance(type)).Mode;
 
+                    // Event handler to verify progress updates are received correctly.
                     EventHandler<HostProgressEventArgs> hostProgress = new EventHandler<HostProgressEventArgs>((sender, args) =>
                     {
                         try
@@ -128,6 +131,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                         }
                     });
 
+                    // Functional test code.
                     using (InterfaceHostProcess process = new InterfaceHostProcess(new TypeArgument(type), argument))
                     {
                         Assert.AreEqual(HostProcessStatus.NotStarted, process.Status);
@@ -150,7 +154,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                                 TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
                                 Assert.IsFalse(process.ChildProcess.HasExited);
                                 process.Stop();
-                                Assert.IsTrue(waitEvent.WaitOne(2000));
+                                Assert.IsTrue(waitEvent.WaitOne(10000));
                             }
 
                             if (expectEndError)
@@ -167,7 +171,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                         }
 
                         TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
-                        Assert.IsTrue(process.ChildProcess.WaitForExit(2000));
+                        Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
                     }
 
                     Assert.AreEqual(expectedProgress, numProgress);
@@ -235,8 +239,8 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                     Assert.AreEqual(HostProcessStatus.Executing, process.Status);
                     Assert.IsFalse(process.ChildProcess.HasExited);
                     process.Stop();
-                    Assert.IsTrue(waitEvent.WaitOne(2000));
-                    Assert.IsTrue(process.ChildProcess.WaitForExit(2000));
+                    Assert.IsTrue(waitEvent.WaitOne(10000));
+                    Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
                     Assert.AreEqual(expected, process.ExecutionResult);
                 }
             }

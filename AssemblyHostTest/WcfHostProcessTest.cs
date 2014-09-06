@@ -134,9 +134,9 @@ namespace SpanglerCo.UnitTests.AssemblyHost
 
                     process.Stop();
                     TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
-                    Assert.IsTrue(waitEvent.WaitOne(2000));
+                    Assert.IsTrue(waitEvent.WaitOne(10000));
                     Assert.AreEqual(HostProcessStatus.Stopped, process.Status);
-                    Assert.IsTrue(process.ChildProcess.WaitForExit(2000));
+                    Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
 
                     TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
                     TestUtilities.AssertThrows(() => { process.CreateChannel<ITestContract>(); }, typeof(InvalidOperationException));
@@ -187,8 +187,8 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                     }
 
                     process.Stop();
-                    Assert.IsTrue(waitEvent.WaitOne(2000));
-                    Assert.IsTrue(process.ChildProcess.WaitForExit(2000));
+                    Assert.IsTrue(waitEvent.WaitOne(10000));
+                    Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
                 }
             }
         }

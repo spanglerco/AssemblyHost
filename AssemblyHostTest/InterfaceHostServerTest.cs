@@ -16,6 +16,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -67,12 +68,11 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                         Assert.IsTrue(server.ParseCommands(InterfaceArgs(typeof(MockChildProcess), string.Empty), child));
                         Assert.IsTrue(server.Execute(child));
                         Assert.IsTrue(parent.SendMessage(MessageType.NotSet));
-                        Thread thread = new Thread(() => { Assert.IsTrue(server.WaitForSignal(child)); });
-                        thread.Start();
+                        Task thread = Task.Factory.StartNew(() => { Assert.IsTrue(server.WaitForSignal(child)); });
                         Assert.IsTrue(parent.SendMessage(MessageType.NotSet));
-                        Assert.IsFalse(thread.Join(500));
+                        Assert.IsFalse(thread.Wait(500));
                         Assert.IsTrue(parent.SendMessage(MessageType.SignalTerminate));
-                        Assert.IsTrue(thread.Join(100));
+                        Assert.IsTrue(thread.Wait(100));
                         Assert.IsTrue(server.TryTerminate(child, out result));
                         Assert.IsNull(result);
                     }
@@ -292,7 +292,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                             Assert.IsTrue(server.ParseCommands(InterfaceArgs(typeof(MockChildProcess), expectedArgs), child));
                             MockChildProcess instance = MockChildProcess.LastInstance;
 
-                            Thread parentThread = new Thread(() =>
+                            Task parentTask = Task.Factory.StartNew(() =>
                             {
                                 switch (mode)
                                 {
@@ -323,13 +323,12 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                                     Assert.IsTrue(parent.SendMessage(MessageType.SignalTerminate));
                                 }
                             });
-                            parentThread.Start();
 
                             Assert.IsTrue(server.Execute(child));
                             Assert.IsTrue(server.WaitForSignal(child));
                             Assert.IsTrue(server.TryTerminate(child, out data));
                             Assert.AreEqual(expectedResult, data);
-                            Assert.IsTrue(parentThread.Join(2000));
+                            Assert.IsTrue(parentTask.Wait(2000));
                         }
                     }
                 }

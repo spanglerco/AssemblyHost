@@ -38,6 +38,7 @@ namespace SpanglerCo.AssemblyHost
         private HostProcessStatus _status;
         private ProcessStartInfo _childInfo;
         private ParentCommunication _communication;
+        private ManualResetEventSlim _stopListener;
 
         /// <summary>
         /// Occurs when the status of the host process has changed.
@@ -81,7 +82,7 @@ namespace SpanglerCo.AssemblyHost
 
                 if (oldValue != value)
                 {
-                    OnStatusChanged();
+                    OnStatusChanged(value);
                 }
             }
         }
@@ -157,6 +158,7 @@ namespace SpanglerCo.AssemblyHost
             _spinLock = new SpinLock(false);
             _arguments = new List<string>();
             _status = HostProcessStatus.NotStarted;
+            _stopListener = new ManualResetEventSlim();
 
             _arguments.Add(assemblyLoadPath);
             _childInfo.UseShellExecute = false;
@@ -187,7 +189,7 @@ namespace SpanglerCo.AssemblyHost
 
             if (result == comparand)
             {
-                OnStatusChanged();
+                OnStatusChanged(value);
             }
 
             return result;
@@ -219,7 +221,7 @@ namespace SpanglerCo.AssemblyHost
 
             if (result == comparand)
             {
-                OnStatusChanged();
+                OnStatusChanged(value);
             }
 
             return result;
@@ -285,6 +287,74 @@ namespace SpanglerCo.AssemblyHost
         }
 
         /// <summary>
+        /// Waits for the host process to finish execution and enter the Stopped or Error state.
+        /// Returns immediately if the host process has already finished execution.
+        /// </summary>
+        /// <param name="throwOnError">
+        /// If true when the host process encounters an error, an exception representing the error will be thrown.
+        /// Regardless of the value of throwOnError, the exception can be retrieved using the Error property.
+        /// </param>
+        /// <returns>
+        /// The result of executing the hosted assembly, or null if the assembly did not return a result
+        /// or encountered an error and throwOnError is false. The result can also be obtained using
+        /// the ExecutionResult property.
+        /// </returns>
+        /// <exception cref="Exception">
+        /// if throwOnError is true and the host process encounters an error.
+        /// The type of exception is determined by hosted assembly.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">if Dispose has been called.</exception>
+        /// <see cref="Status"/>
+        /// <see cref="Error"/>
+        /// <see cref="ExecutionResult"/>
+
+        public string WaitStopped(bool throwOnError)
+        {
+            WaitStopped(Timeout.Infinite, throwOnError);
+            return ExecutionResult;
+        }
+
+        /// <summary>
+        /// Waits for the host process to finish execution and enter the Stopped or Error state.
+        /// Returns immediately if the host process has already finished execution.
+        /// </summary>
+        /// <param name="millisecondsTimeout">
+        /// The maximum time to wait in milliseconds to wait,
+        /// or System.Threading.Timeout.Infinite to wait indefinitely.
+        /// </param>
+        /// <param name="throwOnError">
+        /// If true when the host process encounters an error, an exception representing the error will be thrown.
+        /// Regardless of the value of throwOnError, the exception can be retrieved using the Error property.
+        /// </param>
+        /// <returns>
+        /// True if the host process has finished, false on timeout.
+        /// Use the ExecutionResult property to retrieve the result of executing the hosted assembly.
+        /// </returns>
+        /// <exception cref="Exception">
+        /// if throwOnError is true and the host process encounters an error.
+        /// The type of exception is determined by hosted assembly.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">if Dispose has been called.</exception>
+        /// <see cref="Status"/>
+        /// <see cref="Error"/>
+        /// <see cref="ExecutionResult"/>
+
+        public bool WaitStopped(int millisecondsTimeout, bool throwOnError)
+        {
+            if (!_stopListener.Wait(millisecondsTimeout))
+            {
+                return false;
+            }
+
+            if (throwOnError && Status == HostProcessStatus.Error)
+            {
+                throw Error;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Runs in another thread to receive messages from the child process.
         /// </summary>
         /// <param name="waitHandle">A ManualResetEventSlim to set upon receiving the first message, or null.</param>
@@ -336,7 +406,7 @@ namespace SpanglerCo.AssemblyHost
                     case MessageType.RequestTerminate:
                         bool lockTaken = false;
                         _spinLock.Enter(ref lockTaken);
-                        
+
                         try
                         {
                             _communication.SendMessage(MessageType.SignalTerminate);
@@ -345,7 +415,7 @@ namespace SpanglerCo.AssemblyHost
                         {
                             _spinLock.Exit();
                         }
-                        
+
                         break;
 
                     case MessageType.InternalError:
@@ -380,12 +450,8 @@ namespace SpanglerCo.AssemblyHost
 
             if (status == HostProcessStatus.Starting || status == HostProcessStatus.Executing)
             {
-                _status = HostProcessStatus.Stopping;
-            }
-
-            if (status == HostProcessStatus.Executing || status == HostProcessStatus.Starting)
-            {
                 bool result;
+                _status = HostProcessStatus.Stopping;
 
                 try
                 {
@@ -395,8 +461,8 @@ namespace SpanglerCo.AssemblyHost
                 {
                     _spinLock.Exit();
                 }
-                
-                OnStatusChanged();
+
+                OnStatusChanged(HostProcessStatus.Stopping);
                 return result;
             }
 
@@ -408,6 +474,21 @@ namespace SpanglerCo.AssemblyHost
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Performs tasks related to status changes then raises the StatusChanged event.
+        /// </summary>
+        /// <param name="newStatus">The status after the change.</param>
+
+        private void OnStatusChanged(HostProcessStatus newStatus)
+        {
+            if (newStatus == HostProcessStatus.Stopped || newStatus == HostProcessStatus.Error)
+            {
+                _stopListener.Set();
+            }
+
+            OnStatusChanged();
         }
 
         /// <summary>
@@ -469,6 +550,8 @@ namespace SpanglerCo.AssemblyHost
                     _childProcess.Dispose();
                     _childProcess = null;
                 }
+
+                _stopListener.Dispose();
             }
         }
     }

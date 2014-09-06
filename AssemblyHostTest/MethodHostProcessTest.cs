@@ -78,12 +78,12 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                     expectedStatus = HostProcessStatus.Starting;
                     process.StatusChanged += statusChanged;
                     process.Start(false);
-                    Assert.IsTrue(waitEvent.WaitOne(2000));
+                    Assert.IsTrue(waitEvent.WaitOne(10000));
                     Assert.AreEqual(HostProcessStatus.Stopped, process.Status);
                     Assert.IsNull(process.Error);
                     Assert.AreEqual(expected, process.ExecutionResult);
                     TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
-                    Assert.IsTrue(process.ChildProcess.WaitForExit(2000));
+                    Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
                 }
             };
 
@@ -103,11 +103,11 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                 expectedStatus = HostProcessStatus.Starting;
                 process.StatusChanged += statusChanged;
                 process.Start(false);
-                Assert.IsTrue(waitEvent.WaitOne(2000));
+                Assert.IsTrue(waitEvent.WaitOne(100000));
                 Assert.AreEqual(HostProcessStatus.Error, process.Status);
                 Assert.IsNull(process.ExecutionResult);
                 Assert.IsInstanceOfType(process.Error, typeof(InvalidOperationException));
-                Assert.IsTrue(process.ChildProcess.WaitForExit(2000));
+                Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
             }
 
             TestUtilities.AssertThrows(() => { new MethodHostProcess(null); }, typeof(ArgumentNullException));
@@ -160,12 +160,12 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                 expectedStatus = HostProcessStatus.Starting;
                 process.StatusChanged += statusChanged;
                 process.Start(true);
-                Assert.IsTrue(waitEvent.WaitOne(2000));
+                Assert.IsTrue(waitEvent.WaitOne(10000));
                 Assert.AreEqual(HostProcessStatus.Stopped, process.Status);
                 Assert.IsNull(process.Error);
                 Assert.AreEqual(expected, process.ExecutionResult);
                 TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
-                Assert.IsTrue(process.ChildProcess.WaitForExit(2000));
+                Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
             }
 
             TestUtilities.AssertThrows(() => { new MethodHostProcess(null, null); }, typeof(ArgumentNullException));

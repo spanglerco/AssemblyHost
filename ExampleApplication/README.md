@@ -11,7 +11,7 @@ To run the examples, open the AssemblyHostExample solution to build and run. Eac
 
 To use an example as a starting point for another application, first add a reference to AssemblyHost in the project. For simplicity, AssemblyHostExample uses a project reference rather than referencing an already built AssemblyHost.exe.
 
-After adding a reference, find the example in the Examples folder and copy the Run and Stop (if applicable) methods. Modify as needed.
+If running the example application from Visual Studio, you can click the link to the source file next to the name of any example to open that example in Visual Studio. This allows you to select an example whose run behavior you want to model in your application and then jump right to the source. Copy the Run and Stop (if applicable) methods and modify as needed.
 
 # Adding an Example
 

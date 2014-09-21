@@ -11,7 +11,10 @@
 // limitations under the License.
 
 using System;
+using System.IO;
 using System.Windows;
+using System.Reflection;
+using System.Diagnostics;
 using System.Windows.Input;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -34,6 +37,7 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
         private DelegateCommand _runCommand;
         private DelegateCommand _stopCommand;
         private DelegateCommand _clearLogCommand;
+        private DelegateCommand _openSourceCommand;
         private ObservableCollection<string> _log;
         private ReadOnlyObservableCollection<string> _readOnlyLog;
 
@@ -121,6 +125,14 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             }
         }
 
+        public string SourceFile
+        {
+            get
+            {
+                return _example.GetType().Name + ".cs";
+            }
+        }
+
         /// <summary>
         /// Gets a command used to run the example.
         /// </summary>
@@ -157,6 +169,14 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             }
         }
 
+        public ICommand OpenSourceFile
+        {
+            get
+            {
+                return _openSourceCommand;
+            }
+        }
+
         /// <summary>
         /// Creates a new example view model.
         /// </summary>
@@ -175,6 +195,7 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             _runCommand = new DelegateCommand(DoRunExample, CanRunExample);
             _stopCommand = new DelegateCommand(DoStopExample, CanStopExample);
             _clearLogCommand = new DelegateCommand(_log.Clear, CanClearLog);
+            _openSourceCommand = new DelegateCommand(DoOpenSourceFile);
         }
 
         /// <see cref="Object.ToString"/>
@@ -183,7 +204,7 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
         {
             return Name;
         }
-        
+
         /// <summary>
         /// Runs the example asynchronously.
         /// </summary>
@@ -198,6 +219,11 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             // Then add a continuation task that will clean up when the example is finished.
             _runningExample.ContinueWith(t =>
             {
+                if (_runningExample.IsFaulted)
+                {
+                    ((IExampleLogger)this).Log(_runningExample.Exception.InnerException);
+                }
+
                 _runningExample.Dispose();
                 _runningExample = null;
                 ((IExampleLogger)this).Log("Example complete");
@@ -246,6 +272,40 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             return _log.Count > 0;
         }
 
+        private void DoOpenSourceFile()
+        {
+            // See if we are running from the build output directory.
+
+            string solutionFolderPath = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)));
+            string solutionFilePath = Path.Combine(solutionFolderPath, "AssemblyHostExample.sln");
+            string sourceFilePath = Path.Combine(solutionFolderPath, "Examples", SourceFile);
+
+            if (File.Exists(sourceFilePath))
+            {
+                Task.Factory.StartNew(() =>
+                {
+                    // First try to connect to a running Visual Studio instance.
+
+                    using (VisualStudioCommunication communication = new VisualStudioCommunication(solutionFilePath))
+                    {
+                        communication.OpenFile(sourceFilePath);
+                        communication.BringToFront();
+                    }
+                }).ContinueWith(t =>
+                {
+                    // On error fall back to opening the source file manually.
+
+                    ProcessStartInfo info = new ProcessStartInfo(sourceFilePath);
+                    info.UseShellExecute = true;
+                    Process.Start(info).Dispose();
+                }, TaskContinuationOptions.NotOnRanToCompletion);
+            }
+            else
+            {
+                MessageBox.Show("Ensure you are running the example application from the build output directory. Could not find " + sourceFilePath);
+            }
+        }
+
         /// <see cref="IExampleLogger.Log(string)"/>
 
         void IExampleLogger.Log(string message)
@@ -289,7 +349,7 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
 
         string IDataErrorInfo.this[string columnName]
         {
-            get 
+            get
             {
                 if (_example.ParameterPrompt != null && columnName == "Parameter" && string.IsNullOrEmpty(_parameter))
                 {

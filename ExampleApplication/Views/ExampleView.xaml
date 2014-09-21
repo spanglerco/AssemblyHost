@@ -44,8 +44,14 @@ limitations under the License.
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2">
+            <TextBlock FontWeight="Bold" FontSize="22" Text="{Binding Name}"/>
+            (<Hyperlink Command="{Binding OpenSourceFile}" ToolTip="Open the source file for this example.">
+                <Run Text="{Binding SourceFile, Mode=OneWay}"/>
+            </Hyperlink>)
+        </TextBlock>
         
-        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" FontWeight="Bold" FontSize="22" Text="{Binding Name}"/>
         <ScrollViewer Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10" VerticalScrollBarVisibility="Auto" MaxHeight="150">
             <TextBlock TextWrapping="Wrap" Text="{Binding Description}"/>
         </ScrollViewer>

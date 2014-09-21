@@ -1,0 +1,25 @@
+﻿<Window x:ClassModifier="internal" x:Class="SpanglerCo.AssemblyHostExample.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:SpanglerCo.AssemblyHostExample.Views"
+        Title="Assembly Host Examples" Width="750" SizeToContent="Height" ResizeMode="CanMinimize">
+    
+    <!-- Close the window when escape is pressed. -->
+    <Window.CommandBindings>
+        <CommandBinding Command="Close" Executed="OnCloseCommand" />
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Command="Close" Key="Escape" />
+    </Window.InputBindings>
+    
+    <DockPanel>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+            <StackPanel Orientation="Vertical">
+                <Label Target="{Binding ElementName=Examples}" HorizontalAlignment="Center" FontWeight="Bold">Available _Examples</Label>
+                <ListBox Name="Examples" ItemsSource="{Binding Examples}" SelectionMode="Single" SelectedItem="{Binding SelectedExample}" MinWidth="200"/>
+            </StackPanel>
+            <Separator Margin="5,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+        </StackPanel>
+        <v:ExampleView DataContext="{Binding SelectedExample}" DockPanel.Dock="Right"/>
+    </DockPanel>
+</Window>

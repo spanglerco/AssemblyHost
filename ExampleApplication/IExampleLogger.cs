@@ -14,5 +14,12 @@ namespace SpanglerCo.AssemblyHostExample
         /// <param name="message">The message to log.</param>
 
         void Log(string message);
+
+        /// <summary>
+        /// Logs an exception message.
+        /// </summary>
+        /// <param name="ex">The exception to log.</param>
+
+        void Log(Exception ex);
     }
 }

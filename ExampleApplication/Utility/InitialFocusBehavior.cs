@@ -20,7 +20,7 @@ namespace SpanglerCo.AssemblyHostExample.Utility
     /// Contains useful attached properties.
     /// </summary>
 
-    internal static class Behaviors
+    internal static partial class Behaviors
     {
         /// <summary>
         /// Gets the value of the InitialFocus attached property.

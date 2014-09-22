@@ -12,6 +12,7 @@
 
 using System;
 using System.Threading;
+using System.Diagnostics;
 
 using SpanglerCo.AssemblyHost;
 
@@ -62,5 +63,11 @@ namespace SpanglerCo.AssemblyHostExample
         /// <param name="logger">An object that the example can use to log messages while stopping.</param>
 
         void Stop(IExampleLogger logger);
+
+        /// <summary>
+        /// Gets the process information for the child for the current execution.
+        /// </summary>
+
+        Process ChildProcess { get; }
     }
 }

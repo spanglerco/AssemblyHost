@@ -95,7 +95,8 @@ namespace SpanglerCo.AssemblyHostExample.Examples
                     host.StatusChanged += (sender, args) => { logger.Log(string.Format("Child process moved to {0} status", host.Status)); };
 
                     logger.Log("Starting child process");
-                    host.Start(false);
+                    host.Start(true);
+                    ChildProcess = Process.GetProcessById(host.ChildProcess.Id); // Needed for abort.
 
                     // Go do something useful if we don't need to wait for the child process to finish...
 
@@ -171,5 +172,9 @@ namespace SpanglerCo.AssemblyHostExample.Examples
         {
             throw new InvalidOperationException();
         }
+
+        /// <see cref="IExample.ChildProcess"/>
+
+        public Process ChildProcess { get; private set; }
     }
 }

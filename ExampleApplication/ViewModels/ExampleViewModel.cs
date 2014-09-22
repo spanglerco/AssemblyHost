@@ -36,6 +36,7 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
         private Task _runningExample;
         private DelegateCommand _runCommand;
         private DelegateCommand _stopCommand;
+        private DelegateCommand _abortCommand;
         private DelegateCommand _clearLogCommand;
         private DelegateCommand _openSourceCommand;
         private ObservableCollection<string> _log;
@@ -169,11 +170,27 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets a command used to open the source file for the example.
+        /// </summary>
+
         public ICommand OpenSourceFile
         {
             get
             {
                 return _openSourceCommand;
+            }
+        }
+
+        /// <summary>
+        /// Gets a command used to abort the example.
+        /// </summary>
+
+        public ICommand AbortExample
+        {
+            get
+            {
+                return _abortCommand;
             }
         }
 
@@ -196,6 +213,7 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             _stopCommand = new DelegateCommand(DoStopExample, CanStopExample);
             _clearLogCommand = new DelegateCommand(_log.Clear, CanClearLog);
             _openSourceCommand = new DelegateCommand(DoOpenSourceFile);
+            _abortCommand = new DelegateCommand(DoAbortExample, CanAbortExample);
         }
 
         /// <see cref="Object.ToString"/>
@@ -227,6 +245,11 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
                 _runningExample.Dispose();
                 _runningExample = null;
                 ((IExampleLogger)this).Log("Example complete");
+
+                if (_example.ChildProcess != null)
+                {
+                    _example.ChildProcess.Dispose();
+                }
 
                 // Inform the command manager that the run command's CanExecute status has changed.
                 Application.Current.Dispatcher.BeginInvoke(new Action(CommandManager.InvalidateRequerySuggested));
@@ -272,6 +295,10 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             return _log.Count > 0;
         }
 
+        /// <summary>
+        /// Opens the source file associated with the example asynchronously.
+        /// </summary>
+
         private void DoOpenSourceFile()
         {
             // See if we are running from the build output directory.
@@ -304,6 +331,37 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
             {
                 MessageBox.Show("Ensure you are running the example application from the build output directory. Could not find " + sourceFilePath);
             }
+        }
+
+        /// <summary>
+        /// Aborts the running example.
+        /// </summary>
+
+        private void DoAbortExample()
+        {
+            Process p = _example.ChildProcess;
+
+            if (p != null)
+            {
+                try
+                {
+                    p.Kill();
+                }
+                catch (InvalidOperationException)
+                { }
+                catch (Win32Exception)
+                { }
+            }
+        }
+
+        /// <summary>
+        /// Returns whether or not the example can be aborted.
+        /// </summary>
+        /// <returns>True if can abort, false if not.</returns>
+
+        private bool CanAbortExample()
+        {
+            return _runningExample != null;
         }
 
         /// <see cref="IExampleLogger.Log(string)"/>

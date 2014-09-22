@@ -27,6 +27,19 @@ namespace SpanglerCo.AssemblyHostExample.Views
         public ExampleView()
         {
             InitializeComponent();
+            DataContextChanged += (sender, args) =>
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (Log.Items.Count > 0)
+                    {
+                        Log.ScrollIntoView(Log.Items[Log.Items.Count - 1]);
+                    }
+
+                    Parameter.Focus();
+                    Parameter.SelectAll();
+                }));
+            };
         }
     }
 }

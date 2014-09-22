@@ -109,6 +109,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Examples\InterfaceSynchronous.cs" />
+    <Compile Include="Utility\AutoScrollBehavior.cs" />
     <Compile Include="Utility\DelegateCommand.cs" />
     <Compile Include="Utility\InitialFocusBehavior.cs" />
     <Compile Include="Utility\InterfaceFactory.cs" />

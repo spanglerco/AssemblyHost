@@ -15,7 +15,7 @@ limitations under the License.
 <UserControl x:ClassModifier="internal" x:Class="SpanglerCo.AssemblyHostExample.Views.ExampleView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:utility="clr-namespace:SpanglerCo.AssemblyHostExample.Utility">
+             xmlns:u="clr-namespace:SpanglerCo.AssemblyHostExample.Utility">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
@@ -59,7 +59,7 @@ limitations under the License.
         <Label Grid.Row="2" Grid.Column="0" Target="{Binding ElementName=Parameter}" Content="{Binding ParameterPrompt}" Margin="-5,0,5,0"
                Visibility="{Binding ShowParameterPrompt, Converter={StaticResource ResourceKey=BooleanToVisibilityConverter}}"/>
 
-        <TextBox Grid.Row="2" Grid.Column="1" Name="Parameter" utility:Behaviors.InitialFocus="True" Style="{StaticResource textBoxInError}"
+        <TextBox Grid.Row="2" Grid.Column="1" Name="Parameter" u:Behaviors.InitialFocus="True" Style="{StaticResource textBoxInError}"
                  Text="{Binding Parameter, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}"
                  Visibility="{Binding ShowParameterPrompt, Converter={StaticResource ResourceKey=BooleanToVisibilityConverter}}"/>
 
@@ -70,17 +70,19 @@ limitations under the License.
             <Button Command="{Binding ClearLog}" Margin="10,0,0,0" VerticalAlignment="Center">_Clear Log</Button>
         </StackPanel>
         
-        <ListBox Grid.Row="5" Grid.ColumnSpan="2" Name="Log" Height="300" Margin="0,5,0,10" ItemsSource="{Binding Log}"/>
+        <ListBox Grid.Row="5" Grid.ColumnSpan="2" Name="Log" Height="300" Margin="0,5,0,10" ItemsSource="{Binding Log}" u:Behaviors.AutoScroll="True"/>
 
         <Grid Grid.Row="6" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             
             <Button Grid.Column="1" Margin="0,0,10,0" Command="{Binding RunExample}" IsDefault="True">_Run Example</Button>
-            <Button Grid.Column="2" Command="{Binding StopExample}">_Stop Example</Button>
+            <Button Grid.Column="2" Margin="0,0,10,0" Command="{Binding StopExample}">_Stop Example</Button>
+            <Button Grid.Column="3" Command="{Binding AbortExample}">Abort Example</Button>
         </Grid>
     </Grid>
 </UserControl>

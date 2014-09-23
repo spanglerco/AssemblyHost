@@ -60,7 +60,10 @@ namespace SpanglerCo.AssemblyHostExample.Utility
 
         public static IEnumerable<TInterface> CreateImplementingTypes(Assembly assembly = null)
         {
-            foreach (Type t in FindImplementingTypes(assembly))
+            List<Type> types = FindImplementingTypes(assembly).ToList();
+            types.Sort((t1, t2) => t1.Name.CompareTo(t2.Name));
+
+            foreach (Type t in types)
             {
                 TInterface obj;
 

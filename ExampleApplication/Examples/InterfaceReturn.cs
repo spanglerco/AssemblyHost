@@ -11,6 +11,7 @@
 // limitations under the License.
 
 using System;
+using System.IO;
 using System.Threading;
 using System.Diagnostics;
 
@@ -19,19 +20,13 @@ using SpanglerCo.AssemblyHost;
 namespace SpanglerCo.AssemblyHostExample.Examples
 {
     /// <summary>
-    /// An AssemblyHost example for <see cref="InterfaceHostProcess"/> in <see cref="ExecutionMode.AsyncThread"/> mode.
+    /// An AssemblyHost example for <see cref="InterfaceHostProcess"/> in <see cref="ExecutionMode.AsyncReturn"/> mode.
     /// </summary>
 
-    public sealed class InterfaceThread : IExample
+    public sealed class InterfaceReturn : IExample
     {
         private InterfaceHostProcess _host;
         private readonly object _hostLock = new object();
-
-        /// <summary>
-        /// The number of milliseconds between progress updates during the example.
-        /// </summary>
-
-        private const int ProgressInterval = 500;
 
         /// <see cref="IExample.Name"/>
 
@@ -39,7 +34,7 @@ namespace SpanglerCo.AssemblyHostExample.Examples
         {
             get
             {
-                return "Interface Thread Mode";
+                return "Interface Return Mode";
             }
         }
 
@@ -49,9 +44,9 @@ namespace SpanglerCo.AssemblyHostExample.Examples
         {
             get
             {
-                return "An example of the Interface host in the AsyncThread mode, which instantiates a class that implements IChildProcess and calls the Execute method asynchronously on another thread.\n\n" +
-                       "InterfaceHostProcess in AsyncThread mode is useful when needing to perform a task in the child process with progress reporting and the ability to cancel.\n\n" +
-                       "The input parameter is the number of seconds it will take for the child process to finish its task. Try entering a non-integer value as well. Use the Stop Example button to cancel the task.";
+                return "An example of the Interface host in the AsyncReturn mode, which instantiates a class that implements IChildProcess, calls the Execute method, then calls EndExecution to stop.\n\n" +
+                       "InterfaceHostProcess in AsyncReturn mode is useful when needing to host a service or indefinite task in the child process with progress reporting. The child process doesn't exit until stopped.\n\n" +
+                       "The input parameter is the path to a directory to watch for changes. Try entering a non-existent path as well. Use the Stop Example button to complete the example.";
             }
         }
 
@@ -61,7 +56,7 @@ namespace SpanglerCo.AssemblyHostExample.Examples
         {
             get
             {
-                return "Secon_ds to Execute:";
+                return "_Path to Watch:";
             }
         }
 
@@ -158,7 +153,10 @@ namespace SpanglerCo.AssemblyHostExample.Examples
 
         public class HostedType : IChildProcess
         {
-            private ManualResetEventSlim _cancel;
+            private int _numChanges;
+            private FileSystemWatcher _watcher;
+            private IProgressReporter _reporter;
+            private readonly object _reporterLock = new object();
 
             /// <see cref="IChildProcess.Result"/>
 
@@ -171,69 +169,115 @@ namespace SpanglerCo.AssemblyHostExample.Examples
             {
                 get
                 {
-                    // Tell the AssemblyHost that Execute should be called asynchronously on a new thread.
-                    // In AsyncThread mode, EndExecution will only be called if the parent process calls Stop.
-                    // However, Execute may still return before Stop is called, finishing the child process.
-                    // When that happens, it's possible for EndExecution to never be called.
-                    return ExecutionMode.AsyncThread;
+                    // Tell the AssemblyHost to expect Execute to return but that the child
+                    // process should stay alive until the parent process calls Stop.
+                    // EndExecution will be called at that time. It's important for Execute
+                    // to return in a reasonable amount of time because EndExecution won't
+                    // be called until Execute has returned.
+                    return ExecutionMode.AsyncReturn;
                 }
-            }
-
-            /// <summary>
-            /// Creates a new instance of the hosted type.
-            /// </summary>
-            /// <remarks>
-            /// For a type to be hosted by AssemblyHost, it must have a public
-            /// constructor that takes no parameters or have no constructors,
-            /// in which case the compiler will generate a default constructor.
-            /// </remarks>
-
-            public HostedType()
-            {
-                _cancel = new ManualResetEventSlim();
             }
 
             /// <see cref="IChildProcess.Execute"/>
 
             public void Execute(string arguments, IProgressReporter progressReporter)
             {
-                int seconds;
+                _reporter = progressReporter;
 
-                if (!int.TryParse(arguments, out seconds))
-                {
-                    // This exception will be available in the parent process.
-                    throw new ArgumentException("Must pass an integer number of seconds.", "arguments");
-                }
+                // FileSystemWatcher will throw an exception if the path is invalid or doesn't exist.
+                _watcher = new FileSystemWatcher(arguments);
+                _watcher.Error += new ErrorEventHandler(OnError);
+                _watcher.Renamed += new RenamedEventHandler(OnRenamed);
+                _watcher.Changed += new FileSystemEventHandler(OnChanged);
+                _watcher.Created += new FileSystemEventHandler(OnCreated);
+                _watcher.Deleted += new FileSystemEventHandler(OnDeleted);
+                _watcher.EnableRaisingEvents = true;
 
-                int remaining = seconds * 1000;
-
-                while (remaining > 0)
-                {
-                    if (_cancel.Wait(0))
-                    {
-                        progressReporter.ReportProgress(string.Format("Canceling task with {0} milliseconds remaining.", remaining));
-                        Result = string.Format("Task canceled after {0} seconds.", seconds - remaining / 1000.0);
-                        return;
-                    }
-
-                    progressReporter.ReportProgress(string.Format("Task in progress, {0} milliseconds remain.", remaining));
-                    Thread.Sleep(remaining > ProgressInterval ? ProgressInterval : remaining);
-                    remaining -= ProgressInterval;
-                }
-
-                Result = string.Format("Task completed in {0} seconds.", seconds);
+                // The FileSystemWatcher will continue to run until EndExecution is called
+                // when the parent process calls Stop.
+                progressReporter.ReportProgress("Monitoring enabled. Make changes within " + arguments + ".");
             }
 
             /// <see cref="IChildProcess.EndExecution"/>
             /// <remarks>
-            /// In AsyncThread mode, EndExecution may be called after Execute has already returned.
-            /// The event will remain valid because it never gets manually disposed.
+            /// In AsyncReturn mode, EndExecution will always be called once Execute
+            /// has returned and the parent process has called Stop.
+            /// The FileSystemWatcher will remain valid because it never gets manually disposed.
             /// </remarks>
 
             public void EndExecution()
             {
-                _cancel.Set();
+                _watcher.EnableRaisingEvents = false;
+
+                lock (_reporterLock)
+                {
+                    _reporter = null;
+                    Result = string.Format("Monitored {0} changes.", _numChanges);
+                }
             }
+
+            #region FileSystemWatcher event handlers
+
+            private void OnError(object sender, ErrorEventArgs e)
+            {
+                lock (_reporterLock)
+                {
+                    if (_reporter != null)
+                    {
+                        _reporter.ReportProgress("Error: " + e.GetException().Message);
+                    }
+                }
+            }
+
+            private void OnRenamed(object sender, RenamedEventArgs e)
+            {
+                lock (_reporterLock)
+                {
+                    if (_reporter != null)
+                    {
+                        ++_numChanges;
+                        _reporter.ReportProgress(string.Format("Renamed {0} to {1}.", e.OldName, e.Name));
+                    }
+                }
+            }
+
+            private void OnDeleted(object sender, FileSystemEventArgs e)
+            {
+                lock (_reporterLock)
+                {
+                    if (_reporter != null)
+                    {
+                        ++_numChanges;
+                        _reporter.ReportProgress(string.Format("Deleted {0}.", e.Name));
+                    }
+                }
+            }
+
+            private void OnCreated(object sender, FileSystemEventArgs e)
+            {
+                lock (_reporterLock)
+                {
+                    if (_reporter != null)
+                    {
+                        ++_numChanges;
+                        _reporter.ReportProgress(string.Format("Created {0}.", e.Name));
+                    }
+                }
+            }
+
+            private void OnChanged(object sender, FileSystemEventArgs e)
+            {
+                lock (_reporterLock)
+                {
+                    if (_reporter != null)
+                    {
+                        ++_numChanges;
+                        _reporter.ReportProgress(string.Format("Changed {0}.", e.Name));
+                    }
+                }
+            }
+
+            #endregion
         }
 
         /// <see cref="IExample.ChildProcess"/>

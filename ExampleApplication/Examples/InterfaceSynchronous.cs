@@ -129,7 +129,7 @@ namespace SpanglerCo.AssemblyHostExample.Examples
                 get
                 {
                     // Tell the AssemblyHost that Execute should be called synchronously.
-                    // In Synchronous mode, EndExecute will never be called.
+                    // In Synchronous mode, EndExecution will never be called.
                     return ExecutionMode.Synchronous;
                 }
             }

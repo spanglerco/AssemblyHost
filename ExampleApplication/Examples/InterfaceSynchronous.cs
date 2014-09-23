@@ -11,10 +11,10 @@
 // limitations under the License.
 
 using System;
-
-using SpanglerCo.AssemblyHost;
 using System.Threading;
 using System.Diagnostics;
+
+using SpanglerCo.AssemblyHost;
 
 namespace SpanglerCo.AssemblyHostExample.Examples
 {
@@ -58,7 +58,7 @@ namespace SpanglerCo.AssemblyHostExample.Examples
         {
             get
             {
-                return "_Seconds to Execute:";
+                return "Secon_ds to Execute:";
             }
         }
 
@@ -122,11 +122,14 @@ namespace SpanglerCo.AssemblyHostExample.Examples
             public string Result { get; private set; }
 
             /// <see cref="IChildProcess.Mode"/>
+            /// <see cref="ExecutionMode.Synchronous"/>
 
             public ExecutionMode Mode
             {
                 get
                 {
+                    // Tell the AssemblyHost that Execute should be called synchronously.
+                    // In Synchronous mode, EndExecute will never be called.
                     return ExecutionMode.Synchronous;
                 }
             }

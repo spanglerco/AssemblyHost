@@ -110,6 +110,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Examples\InterfaceSynchronous.cs" />
+    <Compile Include="Examples\InterfaceThread.cs" />
     <Compile Include="Utility\AutoScrollBehavior.cs" />
     <Compile Include="Utility\DelegateCommand.cs" />
     <Compile Include="Utility\InitialFocusBehavior.cs" />

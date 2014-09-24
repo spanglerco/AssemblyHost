@@ -97,6 +97,7 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
@@ -112,6 +113,7 @@
     <Compile Include="Examples\InterfaceReturn.cs" />
     <Compile Include="Examples\InterfaceSynchronous.cs" />
     <Compile Include="Examples\InterfaceThread.cs" />
+    <Compile Include="Examples\WCF.cs" />
     <Compile Include="Utility\AutoScrollBehavior.cs" />
     <Compile Include="Utility\DelegateCommand.cs" />
     <Compile Include="Utility\InitialFocusBehavior.cs" />

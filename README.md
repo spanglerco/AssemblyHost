@@ -36,7 +36,7 @@ Per those goals, the library uses Argument classes that accept paths and names r
 
 # Using the Library
 
-The unit tests for each HostProcess class can serve as an example. In general, use the library as follows:
+For examples of how to use the library in each mode, build and run the AssemblyHostExample application (see ExampleApplication\README.md). In general, use the library as follows:
 
 1. Select which host you want to use: method, interface, or WCF.
 2. If needed, write the target that will run in the child.
@@ -49,6 +49,8 @@ The unit tests for each HostProcess class can serve as an example. In general, u
 6. Interact with the child as needed (i.e. ChildProcess property or CreateChannel method for WCF).
 7. Call Stop (WCF and some interface modes only).
 8. Retrieve the Result (if applicable for the method or interface) and Error properties once the Status is Stopped or Error.
+
+Note that the WaitStopped method will handle both steps 7 and 8 for you.
 
 # Building the Library
 

@@ -77,7 +77,10 @@ namespace SpanglerCo.AssemblyHostExample.ViewModels
 
             // Find every example in this assembly, wrap it in a view model, and add it to the list.
 
-            foreach (IExample example in InterfaceFactory<IExample>.CreateImplementingTypes())
+            List<IExample> examples = InterfaceFactory<IExample>.CreateImplementingTypes().ToList();
+            examples.Sort((e1, e2) => e1.Name.CompareTo(e2.Name));
+
+            foreach (IExample example in examples)
             {
                 _examples.Add(new ExampleViewModel(example));
             }

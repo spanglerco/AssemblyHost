@@ -146,7 +146,7 @@ namespace SpanglerCo.AssemblyHost.Child
             }
             catch (ThreadAbortException)
             {
-                // EndExecute threw an exception that was already passed to the parent.
+                // EndExecution threw an exception that was already passed to the parent.
                 // Don't pass this one as well.
                 throw;
             }

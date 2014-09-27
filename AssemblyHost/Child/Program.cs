@@ -16,10 +16,12 @@
 
 using System;
 using System.IO;
+using System.Security;
 using System.Reflection;
 using System.Runtime.Remoting;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 
 using SpanglerCo.AssemblyHost.Ipc;
 using SpanglerCo.AssemblyHost.Properties;
@@ -56,9 +58,12 @@ namespace SpanglerCo.AssemblyHost.Child
 
             AppDomain domain = AppDomain.CreateDomain("Assembly Host", null, setup);
             Program instance = (Program)domain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location, typeof(Program).FullName);
-            
-            instance.Execute(args);
+
+            instance.Execute(AppDomain.CurrentDomain, args);
         }
+
+        private Communication _communication;
+        private readonly object _lock = new object();
 
         /// <summary>
         /// Executes the hosted assembly.
@@ -66,7 +71,7 @@ namespace SpanglerCo.AssemblyHost.Child
         /// <param name="args">The command-line arguments.</param>
 
         [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Called cross-domain via instance.")]
-        private void Execute(string[] args)
+        private void Execute(AppDomain main, string[] args)
         {
             // The first argument has already been processed.
 
@@ -87,6 +92,17 @@ namespace SpanglerCo.AssemblyHost.Child
                 }
                 else
                 {
+                    lock (_lock)
+                    {
+                        // The UnhandledException event runs in the AppDomain that owns
+                        // the thread, not the one that threw the exception. Additionally,
+                        // the main AppDomain will raise the event for unhandled exceptions
+                        // in any other AppDomain as well. So register for the event on the main.
+
+                        _communication = communication;
+                        main.UnhandledException += OnUnhandledException;
+                    }
+
                     try
                     {
                         using (HostServer host = HostServerFactory.CreateHostServer(type))
@@ -119,10 +135,53 @@ namespace SpanglerCo.AssemblyHost.Child
                         communication.WaitForRead();
                         throw;
                     }
+                    finally
+                    {
+                        lock (_lock)
+                        {
+                            main.UnhandledException -= OnUnhandledException;
+                            _communication = null;
+                        }
+                    }
                 }
 
                 communication.WaitForRead();
             }
+        }
+
+        /// <summary>
+        /// Handles the <see cref="AppDomain.UnhandledException"/> event.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="HandleProcessCorruptedStateExceptionsAttribute"/> and
+        /// <see cref="SecurityCriticalAttribute"/> are required to catch certain
+        /// exceptions like <see cref="AccessViolationException"/>.
+        /// </remarks>
+
+        [SecurityCritical]
+        [HandleProcessCorruptedStateExceptions]
+        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            lock (_lock)
+            {
+                if (_communication != null)
+                {
+                    TargetInvocationException ex = e.ExceptionObject as TargetInvocationException;
+
+                    if (ex != null)
+                    {
+                        _communication.SendMessage(MessageType.ExecuteError, ex.InnerException);
+                    }
+                    else
+                    {
+                        _communication.SendMessage(MessageType.ExecuteError, e.ExceptionObject as Exception);
+                    }
+                    
+                    _communication.WaitForRead();
+                }
+            }
+
+            Environment.Exit(1);
         }
     }
 }

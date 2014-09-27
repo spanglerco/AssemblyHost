@@ -16,6 +16,7 @@
 
 using System;
 using System.Threading;
+using System.Reflection;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -171,6 +172,88 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             TestUtilities.AssertThrows(() => { new MethodHostProcess(null, null); }, typeof(ArgumentNullException));
             TestUtilities.AssertThrows(() => { new MethodHostProcess(null, new ProcessStartInfo()); }, typeof(ArgumentNullException));
             TestUtilities.AssertThrows(() => { new MethodHostProcess(new MethodArgument(typeof(MockMethodClass).GetMethod("Null")), null); }, typeof(ArgumentNullException));
+        }
+
+        /// <summary>
+        /// Tests that unhandled exceptions in the child process are reported.
+        /// </summary>
+
+        [TestMethod]
+        public void UnhandledExceptionTest()
+        {
+            Action<string, Type> testExceptions = (methodName, exceptionType) =>
+            {
+                using (MethodHostProcess process = new MethodHostProcess(new MethodArgument(typeof(TerribleThings).GetMethod(methodName))))
+                {
+                    process.Start(false);
+                    TestUtilities.AssertThrows(() => { process.WaitStopped(true); }, exceptionType);
+                }
+            };
+
+            // Standard use of UnhandledException event.
+            testExceptions("ThrowUnhandled", typeof(ArgumentNullException));
+
+            // Additionally requires security attributes to opt-in.
+            testExceptions("AccessViolation", typeof(AccessViolationException));
+
+            // Fast exit. Cannot be caught, nor does it invoke OS crash dialog.
+            testExceptions("BufferOverrun", typeof(TargetInvocationException));
+
+            // Note that despite documentation for the UnhandledException
+            // event, stack overflow exceptions cannot be caught. Neither in
+            // .NET 3.5 nor 4.0.
+        }
+
+        /// <summary>
+        /// A class containing methods that do terrible things.
+        /// </summary>
+
+        public static class TerribleThings
+        {
+            /// <summary>
+            /// Throws an unhandled exception in another thread.
+            /// </summary>
+            /// <exception cref="ArgumentNullException">in another thread.</exception>
+
+            public static void ThrowUnhandled()
+            {
+                // Use a raw thread. Tasks and thread pool will catch.
+                Thread t = new Thread(() => { throw new ArgumentNullException(); });
+                t.Start();
+                t.Join();
+            }
+
+            /// <summary>
+            /// Causes a buffer overrun.
+            /// </summary>
+            /// <remarks>
+            /// Will not throw an exception, nor even a crash dialog.
+            /// .NET terminates immediately for security.
+            /// </remarks>
+
+            public static unsafe void BufferOverrun()
+            {
+                // Out of bounds write. stackalloc will automatically enable buffer overrun detection.
+                int* buffer = stackalloc int[1];
+                buffer[10] = 5;
+            }
+
+            /// <summary>
+            /// Causes an access violation.
+            /// </summary>
+            /// <exception cref="AccessViolationException">always</exception>
+            /// <remarks>
+            /// As of .NET 4, access violations cannot be caught without opting in using the
+            /// <see cref="HandleProcessCorruptedStateExceptionsAttribute"/> and
+            /// requires <see cref="SecurityCriticalAttribute"/>.
+            /// </remarks>
+
+            public static unsafe void AccessViolation()
+            {
+                // We don't want a NullReferenceException, so access memory not managed by the CLR.
+                int* x = (int*)int.MaxValue;
+                *x = 5;
+            }
         }
     }
 }

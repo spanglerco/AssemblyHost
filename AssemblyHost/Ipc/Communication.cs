@@ -31,6 +31,7 @@ namespace SpanglerCo.AssemblyHost.Ipc
     {
         private BinaryReader _readStream;
         private BinaryWriter _writeStream;
+        private readonly object _lock = new object();
 
         /// <summary>
         /// Represents the different types of payloads sent between processes.
@@ -151,51 +152,54 @@ namespace SpanglerCo.AssemblyHost.Ipc
 
         public bool SendMessage(MessageType type, string data, Exception ex)
         {
-            Debug.Assert(_writeStream != null, "CreateLink was not called");
-
-            if (!WritePipe.IsConnected)
+            lock (_lock)
             {
-                return false;
-            }
+                Debug.Assert(_writeStream != null, "CreateLink was not called");
 
-            try
-            {
-                PayloadTypes payload = PayloadTypes.None;
-
-                if (data != null)
+                if (!WritePipe.IsConnected)
                 {
-                    payload |= PayloadTypes.String;
+                    return false;
                 }
 
-                if (ex != null)
+                try
                 {
-                    payload |= PayloadTypes.Exception;
+                    PayloadTypes payload = PayloadTypes.None;
+
+                    if (data != null)
+                    {
+                        payload |= PayloadTypes.String;
+                    }
+
+                    if (ex != null)
+                    {
+                        payload |= PayloadTypes.Exception;
+                    }
+
+                    _writeStream.Write((byte)payload);
+                    _writeStream.Write((ushort)type);
+
+                    if (data != null)
+                    {
+                        _writeStream.Write(data);
+                    }
+
+                    if (ex != null)
+                    {
+                        _writeStream.Write(ex.GetType().FullName); // Not AssemblyQualifiedName to prevent loading assemblies.
+                        _writeStream.Write(ex.Message ?? string.Empty);
+                    }
+
+                    _writeStream.Flush();
+                    return true;
                 }
-
-                _writeStream.Write((byte)payload);
-                _writeStream.Write((ushort)type);
-
-                if (data != null)
+                catch (ObjectDisposedException)
                 {
-                    _writeStream.Write(data);
+                    return false;
                 }
-
-                if (ex != null)
+                catch (IOException)
                 {
-                    _writeStream.Write(ex.GetType().FullName); // Not AssemblyQualifiedName to prevent loading assemblies.
-                    _writeStream.Write(ex.Message ?? string.Empty);
+                    return false;
                 }
-
-                _writeStream.Flush();
-                return true;
-            }
-            catch (ObjectDisposedException)
-            {
-                return false;
-            }
-            catch (IOException)
-            {
-                return false;
             }
         }
 

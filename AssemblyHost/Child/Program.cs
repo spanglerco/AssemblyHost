@@ -68,6 +68,7 @@ namespace SpanglerCo.AssemblyHost.Child
         /// <summary>
         /// Executes the hosted assembly.
         /// </summary>
+        /// <param name="main">The main AppDomain for the application.</param>
         /// <param name="args">The command-line arguments.</param>
 
         [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Called cross-domain via instance.")]

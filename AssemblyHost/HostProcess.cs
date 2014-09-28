@@ -47,12 +47,6 @@ namespace SpanglerCo.AssemblyHost
         public event EventHandler StatusChanged;
 
         /// <summary>
-        /// Occurs when the host process reports progress.
-        /// </summary>
-
-        public event EventHandler<HostProgressEventArgs> HostProgress;
-
-        /// <summary>
         /// Gets the status of the process.
         /// </summary>
 
@@ -504,17 +498,12 @@ namespace SpanglerCo.AssemblyHost
         }
 
         /// <summary>
-        /// Raises the HostProgress event.
+        /// Called when the host process reports progress. Does nothing by default.
         /// </summary>
         /// <param name="progress">The progress reported by the host process.</param>
 
         protected virtual void OnHostProgress(string progress)
-        {
-            if (HostProgress != null)
-            {
-                HostProgress(this, new HostProgressEventArgs(progress));
-            }
-        }
+        { }
 
         /// <summary>
         /// Adds command-line arguments to pass to the child process.

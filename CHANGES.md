@@ -1,7 +1,13 @@
 AssemblyHost Releases
 ============
 
-The current version of AssemblyHost is 1.1.0.0.
+The current released version of AssemblyHost is 1.1.0.0.
+
+# 2.0.0.0 (Under development)
+
+Source compatible with 1.1.0.0 unless code registered for the HostProgress event with a non-InterfaceHostProcess reference. Not binary compatible.
+
+- Moved the HostProgress event from HostProcess to InterfaceHostProcess to clean up the API a bit.
 
 # 1.1.0.0 (Released September 27, 2014)
 

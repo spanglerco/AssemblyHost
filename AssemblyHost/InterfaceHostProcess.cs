@@ -34,6 +34,12 @@ namespace SpanglerCo.AssemblyHost
         private TypeArgument _type;
 
         /// <summary>
+        /// Occurs when the host process reports progress.
+        /// </summary>
+
+        public event EventHandler<HostProgressEventArgs> HostProgress;
+
+        /// <summary>
         /// Gets the assembly load path for a type.
         /// </summary>
         /// <param name="type">The type whose load path will be returned.</param>
@@ -101,6 +107,20 @@ namespace SpanglerCo.AssemblyHost
         public void Stop()
         {
             StopChild();
+        }
+
+        /// <see cref="HostProcess.OnHostProgress"/>
+        /// <remarks>
+        /// Raises the HostProgress event.
+        /// </remarks>
+
+        protected override void OnHostProgress(string progress)
+        {
+            var temp = HostProgress;
+            if (temp != null)
+            {
+                temp(this, new HostProgressEventArgs(progress));
+            }
         }
 
         /// <see cref="HostProcess.Dispose(bool)"/>

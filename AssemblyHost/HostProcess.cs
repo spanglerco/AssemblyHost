@@ -491,9 +491,10 @@ namespace SpanglerCo.AssemblyHost
 
         protected virtual void OnStatusChanged()
         {
-            if (StatusChanged != null)
+            var temp = StatusChanged;
+            if (temp != null)
             {
-                StatusChanged(this, EventArgs.Empty);
+                temp(this, EventArgs.Empty);
             }
         }
 

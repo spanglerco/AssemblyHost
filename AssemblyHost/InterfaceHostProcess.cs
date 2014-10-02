@@ -15,11 +15,13 @@
 // along with AssemblyHost.  If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 using SpanglerCo.AssemblyHost.Child;
+using SpanglerCo.AssemblyHost.Internal;
 
 namespace SpanglerCo.AssemblyHost
 {
@@ -40,20 +42,20 @@ namespace SpanglerCo.AssemblyHost
         public event EventHandler<HostProgressEventArgs> HostProgress;
 
         /// <summary>
-        /// Gets the assembly load path for a type.
+        /// Gets the assembly information for a type.
         /// </summary>
         /// <param name="type">The type whose load path will be returned.</param>
-        /// <returns>The assembly load path.</returns>
+        /// <returns>The assembly argument.</returns>
         /// <exception cref="ArgumentNullException">if type is null.</exception>
 
-        private static string GetAssemblyLoadPath(TypeArgument type)
+        private static AssemblyArgument GetAssemblyArgument(TypeArgument type)
         {
             if (type == null)
             {
                 throw new ArgumentNullException("type");
             }
 
-            return type.ContainingAssembly.Location;
+            return type.ContainingAssembly;
         }
 
         /// <summary>
@@ -68,7 +70,7 @@ namespace SpanglerCo.AssemblyHost
         /// </remarks>
 
         public InterfaceHostProcess(TypeArgument type, string arguments)
-            : base(GetAssemblyLoadPath(type))
+            : base(GetAssemblyArgument(type), new LauncherLocater())
         {
             _type = type;
             _arguments = arguments;
@@ -81,9 +83,10 @@ namespace SpanglerCo.AssemblyHost
         /// <param name="startInfo">The start info to use when creating the process.</param>
         /// <param name="arguments">The arguments to pass to IChildProcess.Execute in the process.</param>
         /// <exception cref="ArgumentNullException">if type or startInfo are null.</exception>
+        /// <exception cref="FileNotFoundException">if the requested bitness requires 32-bit but the launcher cannot be found.</exception>
 
         public InterfaceHostProcess(TypeArgument type, ProcessStartInfo startInfo, string arguments)
-            : base(GetAssemblyLoadPath(type), startInfo)
+            : base(GetAssemblyArgument(type), new LauncherLocater(), startInfo)
         {
             _type = type;
             _arguments = arguments;

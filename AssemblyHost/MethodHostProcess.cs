@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 using SpanglerCo.AssemblyHost.Child;
+using SpanglerCo.AssemblyHost.Internal;
 
 namespace SpanglerCo.AssemblyHost
 {
@@ -36,20 +37,20 @@ namespace SpanglerCo.AssemblyHost
         private MethodArgument _method;
 
         /// <summary>
-        /// Gets the assembly load path for a method.
+        /// Gets the assembly information for a method.
         /// </summary>
         /// <param name="method">The method whose load path will be returned.</param>
-        /// <returns>The assembly load path.</returns>
+        /// <returns>The assembly argument.</returns>
         /// <exception cref="ArgumentNullException">if method is null.</exception>
 
-        private static string GetAssemblyLoadPath(MethodArgument method)
+        private static AssemblyArgument GetAssemblyArgument(MethodArgument method)
         {
             if (method == null)
             {
                 throw new ArgumentNullException("method");
             }
 
-            return method.ContainingType.ContainingAssembly.Location;
+            return method.ContainingType.ContainingAssembly;
         }
 
         /// <summary>
@@ -63,7 +64,7 @@ namespace SpanglerCo.AssemblyHost
         /// </remarks>
 
         public MethodHostProcess(MethodArgument method)
-            : base(GetAssemblyLoadPath(method))
+            : base(GetAssemblyArgument(method), new LauncherLocater())
         {
             _method = method;
         }
@@ -74,9 +75,10 @@ namespace SpanglerCo.AssemblyHost
         /// <param name="method">The method to host in the process.</param>
         /// <param name="startInfo">The start info to use when creating the process.</param>
         /// <exception cref="ArgumentNullException">if method or startInfo are null.</exception>
+        /// <exception cref="FileNotFoundException">if the requested bitness requires 32-bit but the launcher cannot be found.</exception>
 
         public MethodHostProcess(MethodArgument method, ProcessStartInfo startInfo)
-            : base(GetAssemblyLoadPath(method), startInfo)
+            : base(GetAssemblyArgument(method), new LauncherLocater(), startInfo)
         {
             _method = method;
         }

@@ -65,6 +65,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             MethodArgument arg = new MethodArgument(location, name, typeName, methodName, true);
             Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingType.ContainingAssembly.Bitness);
             Assert.AreEqual(typeName, arg.ContainingType.Name);
             Assert.AreEqual(methodName, arg.Name);
             Assert.IsTrue(arg.IsStatic);
@@ -88,6 +89,46 @@ namespace SpanglerCo.UnitTests.AssemblyHost
         ///A test for MethodArgument Constructor
         ///</summary>
         [TestMethod()]
+        public void MethodArgumentConstructorStringsBitnessTest()
+        {
+            string name = Assembly.GetExecutingAssembly().FullName;
+            string location = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            HostBitness bitness = HostBitness.Force32;
+            string typeName = GetType().FullName;
+            string methodName = "MethodArgumentConstructorStringsTest";
+            MethodArgument arg = new MethodArgument(location, name, bitness, typeName, methodName, true);
+            Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
+            Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(bitness, arg.ContainingType.ContainingAssembly.Bitness);
+            Assert.AreEqual(typeName, arg.ContainingType.Name);
+            Assert.AreEqual(methodName, arg.Name);
+            Assert.IsTrue(arg.IsStatic);
+
+            Func<string, string, HostBitness, string, string, bool, Action> ctor = (_location, _name, _bitness, _typeName, _methodName, _static) =>
+            { return () => { new MethodArgument(_location, _name, _bitness, _typeName, _methodName, _static); }; };
+
+            TestUtilities.AssertThrows(ctor(null, name, HostBitness.Current, typeName, methodName, true), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(location, null, HostBitness.Current, typeName, methodName, true), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.Current, null, methodName, true), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.Current, typeName, null, false), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(null, null, HostBitness.Current, null, null, true), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(string.Empty, name, HostBitness.Current, typeName, methodName, true), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, string.Empty, HostBitness.Current, typeName, methodName, true), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.NotSet, typeName, methodName, true), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.Current, string.Empty, methodName, true), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.Current, typeName, string.Empty, true), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(string.Empty, string.Empty, HostBitness.Current, string.Empty, string.Empty, false), typeof(ArgumentException));
+
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                TestUtilities.AssertThrows(ctor(location, name, HostBitness.Force64, typeName, methodName, true), typeof(ArgumentException));
+            }
+        }
+
+        /// <summary>
+        ///A test for MethodArgument Constructor
+        ///</summary>
+        [TestMethod()]
         public void MethodArgumentConstructorMethodTest()
         {
             string methodName = "MethodArgumentConstructorMethodTest";
@@ -96,6 +137,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             MethodArgument arg = new MethodArgument(GetType().GetMethod(methodName));
             Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingType.ContainingAssembly.Bitness);
             Assert.AreEqual(GetType().FullName, arg.ContainingType.Name);
             Assert.AreEqual(methodName, arg.Name);
             Assert.IsFalse(arg.IsStatic);
@@ -103,6 +145,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             arg = new MethodArgument(typeof(PublicNested).GetMethod("StaticMethod"));
             Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingType.ContainingAssembly.Bitness);
             Assert.AreEqual(typeof(PublicNested).FullName, arg.ContainingType.Name);
             Assert.AreEqual("StaticMethod", arg.Name);
             Assert.IsTrue(arg.IsStatic);
@@ -110,6 +153,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             arg = new MethodArgument(typeof(PublicNested).GetMethod("Method"));
             Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingType.ContainingAssembly.Bitness);
             Assert.AreEqual(typeof(PublicNested).FullName, arg.ContainingType.Name);
             Assert.AreEqual("Method", arg.Name);
             Assert.IsFalse(arg.IsStatic);
@@ -117,6 +161,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             arg = new MethodArgument(typeof(PublicNested).GetMethod("AbstractMethod"));
             Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingType.ContainingAssembly.Bitness);
             Assert.AreEqual(typeof(PublicNested).FullName, arg.ContainingType.Name);
             Assert.AreEqual("AbstractMethod", arg.Name);
             Assert.IsFalse(arg.IsStatic);
@@ -124,6 +169,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             arg = new MethodArgument(typeof(PublicAbstract).GetMethod("StaticMethod"));
             Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingType.ContainingAssembly.Bitness);
             Assert.AreEqual(typeof(PublicAbstract).FullName, arg.ContainingType.Name);
             Assert.AreEqual("StaticMethod", arg.Name);
             Assert.IsTrue(arg.IsStatic);
@@ -136,6 +182,36 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             TestUtilities.AssertThrows(ctor(typeof(PublicAbstract).GetMethod("Method")), typeof(ArgumentException));
             TestUtilities.AssertThrows(ctor(typeof(PublicAbstract).GetMethod("AbstractMethod")), typeof(ArgumentException));
             TestUtilities.AssertThrows(ctor(typeof(PublicNested).GetMethod("GenericMethod")), typeof(ArgumentException));
+        }
+
+        /// <summary>
+        ///A test for MethodArgument Constructor
+        ///</summary>
+        [TestMethod()]
+        public void MethodArgumentConstructorMethodBitnessTest()
+        {
+            string methodName = "MethodArgumentConstructorMethodTest";
+            string name = Assembly.GetExecutingAssembly().FullName;
+            string location = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            HostBitness bitness = HostBitness.Force32;
+            MethodArgument arg = new MethodArgument(GetType().GetMethod(methodName), bitness);
+            Assert.AreEqual(name, arg.ContainingType.ContainingAssembly.Name);
+            Assert.AreEqual(location, arg.ContainingType.ContainingAssembly.Location);
+            Assert.AreEqual(bitness, arg.ContainingType.ContainingAssembly.Bitness);
+            Assert.AreEqual(GetType().FullName, arg.ContainingType.Name);
+            Assert.AreEqual(methodName, arg.Name);
+            Assert.IsFalse(arg.IsStatic);
+
+            Func<MethodInfo, HostBitness, Action> ctor = (_method, _bitness) => { return () => { new MethodArgument(_method, _bitness); }; };
+
+            TestUtilities.AssertThrows(ctor(null, HostBitness.Current), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(GetType().GetMethod(methodName), HostBitness.NotSet), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(PrivateNested).GetMethod("Method"), HostBitness.Current), typeof(ArgumentException));
+
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                TestUtilities.AssertThrows(ctor(GetType().GetMethod(methodName), HostBitness.Force64), typeof(ArgumentException));
+            }
         }
 
         /// <summary>
@@ -156,6 +232,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             Assert.AreEqual(arg.ContainingType.Name, arg2.ContainingType.Name);
             Assert.AreEqual(arg.ContainingType.ContainingAssembly.Name, arg2.ContainingType.ContainingAssembly.Name);
             // Location is not deserialized. Instead, the location is used in the AppDomain setup.
+            // Bitness is not deserialized. Instead, the bitness is used to determine which executable to run.
 
             // Wrap the calls into Actions.
             Func<Queue<String>, Action> ctor = (_args) => { return () => { new MethodArgument(_args); }; };

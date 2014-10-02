@@ -39,6 +39,12 @@ namespace SpanglerCo.AssemblyHost
         public string Location { get; private set; }
 
         /// <summary>
+        /// Gets the bitness setting for the assembly.
+        /// </summary>
+
+        public HostBitness Bitness { get; private set; }
+
+        /// <summary>
         /// Creates a new assembly argument.
         /// </summary>
         /// <param name="assemblyLocation">The path to the assembly.</param>
@@ -47,6 +53,20 @@ namespace SpanglerCo.AssemblyHost
         /// <exception cref="ArgumentException">if assemblyLocation or assemblyName is empty.</exception>
 
         public AssemblyArgument(string assemblyLocation, string assemblyName)
+            : this(assemblyLocation, assemblyName, HostBitness.Current)
+        { }
+
+        /// <summary>
+        /// Creates a new assembly argument, specifying the bitness.
+        /// </summary>
+        /// <param name="assemblyLocation">The path to the assembly.</param>
+        /// <param name="assemblyName">The name of the assembly.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
+        /// <exception cref="ArgumentNullException">if assemblyLocation or assemblyName is null.</exception>
+        /// <exception cref="ArgumentException">if assemblyLocation or assemblyName is empty.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
+
+        public AssemblyArgument(string assemblyLocation, string assemblyName, HostBitness bitness)
         {
             if (assemblyLocation == null)
             {
@@ -68,6 +88,17 @@ namespace SpanglerCo.AssemblyHost
                 throw new ArgumentException("assemblyName cannot be empty.", "assemblyName");
             }
 
+            if (bitness == HostBitness.Force64 && !Environment.Is64BitOperatingSystem)
+            {
+                throw new ArgumentException("Cannot force 64-bit on a 32-bit operating system.", "bitness");
+            }
+
+            if (bitness == HostBitness.NotSet)
+            {
+                throw new ArgumentException("Must specify a valid bitness.", "bitness");
+            }
+
+            Bitness = bitness;
             Name = assemblyName;
             Location = assemblyLocation;
         }
@@ -76,15 +107,28 @@ namespace SpanglerCo.AssemblyHost
         /// Creates a new assembly argument for a type.
         /// </summary>
         /// <param name="type">The type whose assembly will be used.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
         /// <exception cref="ArgumentNullException">if type is null.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
 
-        internal AssemblyArgument(Type type)
+        internal AssemblyArgument(Type type, HostBitness bitness)
         {
             if (type == null)
             {
                 throw new ArgumentNullException("type");
             }
 
+            if (bitness == HostBitness.Force64 && !Environment.Is64BitOperatingSystem)
+            {
+                throw new ArgumentException("Cannot force 64-bit on a 32-bit operating system.", "bitness");
+            }
+
+            if (bitness == HostBitness.NotSet)
+            {
+                throw new ArgumentException("Must specify a valid bitness.", "bitness");
+            }
+
+            Bitness = bitness;
             Name = type.Assembly.FullName;
             Location = Path.GetDirectoryName(type.Assembly.Location);
         }

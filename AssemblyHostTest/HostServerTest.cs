@@ -182,7 +182,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                     MessageType message;
                     string data;
                     Exception ex;
-                    Assert.IsFalse(MockHostServer.TryLoadType(new TypeArgument(new AssemblyArgument(GetType()), "DoesntExist"), child, out loadedType));
+                    Assert.IsFalse(MockHostServer.TryLoadType(new TypeArgument(new AssemblyArgument(GetType(), HostBitness.Current), "DoesntExist"), child, out loadedType));
                     Assert.IsTrue(parent.TryReadMessage(out message, out data, out ex));
                     Assert.AreEqual(MessageType.InvalidTypeError, message);
 

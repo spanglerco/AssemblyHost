@@ -23,6 +23,7 @@ using System.ComponentModel;
 using System.Collections.Generic;
 
 using SpanglerCo.AssemblyHost.Ipc;
+using SpanglerCo.AssemblyHost.Internal;
 
 namespace SpanglerCo.AssemblyHost
 {
@@ -119,11 +120,12 @@ namespace SpanglerCo.AssemblyHost
         /// <summary>
         /// Creates a new host process.
         /// </summary>
-        /// <param name="assemblyPath">The absolute path containing the assembly to host in the process.</param>
-        /// <exception cref="ArgumentNullException">if assemblyLoadPath is null.</exception>
+        /// <param name="assembly">The information for the assembly to host in the process.</param>
+        /// <param name="locater">An <see cref="IAssemblyLocater"/> for locating the executable to use for the child process.</param>
+        /// <exception cref="ArgumentNullException">if assembly or locater is null.</exception>
 
-        internal HostProcess(string assemblyPath)
-            : this(assemblyPath, new ProcessStartInfo())
+        internal HostProcess(AssemblyArgument assembly, IAssemblyLocater locater)
+            : this(assembly, locater, new ProcessStartInfo())
         {
             _childInfo.CreateNoWindow = true;
             _childInfo.UseShellExecute = false;
@@ -132,15 +134,21 @@ namespace SpanglerCo.AssemblyHost
         /// <summary>
         /// Creates a new host process with given start info.
         /// </summary>
-        /// <param name="assemblyLoadPath">The absolute path containing the assembly to host in the process.</param>
+        /// <param name="assembly">The information for the assembly to host in the process.</param>
+        /// <param name="locater">An <see cref="IAssemblyLocater"/> for locating the executable to use for the child process.</param>
         /// <param name="startInfo">The start info to use when creating the process.</param>
-        /// <exception cref="ArgumentNullException">if assemblyLoadPath or startInfo are null.</exception>
+        /// <exception cref="ArgumentNullException">if assembly, locater, or startInfo are null.</exception>
 
-        internal HostProcess(string assemblyLoadPath, ProcessStartInfo startInfo)
+        internal HostProcess(AssemblyArgument assembly, IAssemblyLocater locater, ProcessStartInfo startInfo)
         {
-            if (assemblyLoadPath == null)
+            if (assembly == null)
             {
-                throw new ArgumentNullException("assemblyLoadPath");
+                throw new ArgumentNullException("assembly");
+            }
+
+            if (locater == null)
+            {
+                throw new ArgumentNullException("locater");
             }
 
             if (startInfo == null)
@@ -154,9 +162,9 @@ namespace SpanglerCo.AssemblyHost
             _status = HostProcessStatus.NotStarted;
             _stopListener = new ManualResetEventSlim();
 
-            _arguments.Add(assemblyLoadPath);
+            _arguments.Add(assembly.Location);
             _childInfo.UseShellExecute = false;
-            _childInfo.FileName = Assembly.GetExecutingAssembly().Location;
+            _childInfo.FileName = locater.LocateAssembly(assembly.Bitness);
         }
 
         /// <summary>

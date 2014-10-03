@@ -87,6 +87,23 @@ namespace SpanglerCo.AssemblyHost
         /// <exception cref="ArgumentException">if assemblyLocation, assemblyName, typeName, or methodName is empty.</exception>
 
         public MethodArgument(string assemblyLocation, string assemblyName, string typeName, string methodName, bool isStatic)
+            : this(assemblyLocation, assemblyName, HostBitness.Current, typeName, methodName, isStatic)
+        { }
+
+        /// <summary>
+        /// Creates a new argument.
+        /// </summary>
+        /// <param name="assemblyLocation">The path containing the assembly.</param>
+        /// <param name="assemblyName">The name of the assembly containing the type.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
+        /// <param name="typeName">The name of the type containing the method.</param>
+        /// <param name="methodName">The name of the method.</param>
+        /// <param name="isStatic">Whether or not the method is static.</param>
+        /// <exception cref="ArgumentNullException">if assemblyLocation, assemblyName, typeName, or methodName are null.</exception>
+        /// <exception cref="ArgumentException">if assemblyLocation, assemblyName, typeName, or methodName is empty.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
+
+        public MethodArgument(string assemblyLocation, string assemblyName, HostBitness bitness, string typeName, string methodName, bool isStatic)
         {
             if (methodName == null)
             {
@@ -100,7 +117,7 @@ namespace SpanglerCo.AssemblyHost
 
             IsStatic = isStatic;
             Name = methodName;
-            ContainingType = new TypeArgument(assemblyLocation, assemblyName, typeName);
+            ContainingType = new TypeArgument(assemblyLocation, assemblyName, bitness, typeName);
         }
 
         /// <summary>
@@ -112,6 +129,20 @@ namespace SpanglerCo.AssemblyHost
         /// <exception cref="ArgumentException">if the type declaring the method is generic or not public.</exception>
 
         public MethodArgument(MethodInfo method)
+            : this(method, HostBitness.Current)
+        { }
+
+        /// <summary>
+        /// Creates a new argument.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
+        /// <exception cref="ArgumentNullException">if method is null.</exception>
+        /// <exception cref="ArgumentException">if method is generic, not public, or cannot be invoked.</exception>
+        /// <exception cref="ArgumentException">if the type declaring the method is generic or not public.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
+
+        public MethodArgument(MethodInfo method, HostBitness bitness)
         {
             if (method == null)
             {
@@ -125,7 +156,7 @@ namespace SpanglerCo.AssemblyHost
 
             Name = method.Name;
             IsStatic = method.IsStatic;
-            ContainingType = new TypeArgument(method);
+            ContainingType = new TypeArgument(method, bitness);
         }
 
         /// <summary>

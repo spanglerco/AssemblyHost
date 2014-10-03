@@ -37,7 +37,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
         [TestMethod()]
         public void TypeArgumentConstructorTest()
         {
-            AssemblyArgument assembly = new AssemblyArgument(GetType());
+            AssemblyArgument assembly = new AssemblyArgument(GetType(), HostBitness.Current);
             string typeName = GetType().FullName;
             TypeArgument arg = new TypeArgument(assembly, typeName);
             Assert.AreEqual(assembly, arg.ContainingAssembly);
@@ -63,6 +63,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             TypeArgument arg = new TypeArgument(location, name, typeName);
             Assert.AreEqual(name, arg.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingAssembly.Bitness);
             Assert.AreEqual(typeName, arg.Name);
 
             Func<string, string, string, Action> ctor = (_location, _name, _typeName) => { return () => { new TypeArgument(_location, _name, _typeName); }; };
@@ -81,6 +82,40 @@ namespace SpanglerCo.UnitTests.AssemblyHost
         ///A test for TypeArgument Constructor
         ///</summary>
         [TestMethod()]
+        public void TypeArgumentConstructorStringsBitnessTest()
+        {
+            string name = Assembly.GetExecutingAssembly().FullName;
+            string location = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string typeName = GetType().FullName;
+            HostBitness bitness = HostBitness.Force32;
+            TypeArgument arg = new TypeArgument(location, name, bitness, typeName);
+            Assert.AreEqual(name, arg.ContainingAssembly.Name);
+            Assert.AreEqual(location, arg.ContainingAssembly.Location);
+            Assert.AreEqual(bitness, arg.ContainingAssembly.Bitness);
+            Assert.AreEqual(typeName, arg.Name);
+
+            Func<string, string, HostBitness, string, Action> ctor = (_location, _name, _bitness, _typeName) => { return () => { new TypeArgument(_location, _name, _bitness, _typeName); }; };
+
+            TestUtilities.AssertThrows(ctor(null, name, HostBitness.Current, typeName), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(location, null, HostBitness.Current, typeName), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.Current, null), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(null, null, HostBitness.Current, null), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(string.Empty, name, HostBitness.Current, typeName), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, string.Empty, HostBitness.Current, typeName), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.NotSet, typeName), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.Current, string.Empty), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(string.Empty, string.Empty, HostBitness.Current, string.Empty), typeof(ArgumentException));
+
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                TestUtilities.AssertThrows(ctor(location, name, HostBitness.Force64, typeName), typeof(ArgumentException));
+            }
+        }
+
+        /// <summary>
+        ///A test for TypeArgument Constructor
+        ///</summary>
+        [TestMethod()]
         public void TypeArgumentConstructorTypeTest()
         {
             string name = Assembly.GetExecutingAssembly().FullName;
@@ -88,11 +123,13 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             TypeArgument arg = new TypeArgument(GetType());
             Assert.AreEqual(name, arg.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingAssembly.Bitness);
             Assert.AreEqual(GetType().FullName, arg.Name);
 
             arg = new TypeArgument(typeof(PublicNested));
             Assert.AreEqual(name, arg.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingAssembly.Location);
+            Assert.AreEqual(HostBitness.Current, arg.ContainingAssembly.Bitness);
             Assert.AreEqual(typeof(PublicNested).FullName, arg.Name);
 
             Func<Type, Action> ctor = (_type) => { return () => { new TypeArgument(_type); }; };
@@ -111,21 +148,62 @@ namespace SpanglerCo.UnitTests.AssemblyHost
         ///A test for TypeArgument Constructor
         ///</summary>
         [TestMethod()]
+        public void TypeArgumentConstructorTypeBitnessTest()
+        {
+            string name = Assembly.GetExecutingAssembly().FullName;
+            string location = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            HostBitness bitness = HostBitness.Native;
+            TypeArgument arg = new TypeArgument(GetType(), bitness);
+            Assert.AreEqual(name, arg.ContainingAssembly.Name);
+            Assert.AreEqual(location, arg.ContainingAssembly.Location);
+            Assert.AreEqual(bitness, arg.ContainingAssembly.Bitness);
+            Assert.AreEqual(GetType().FullName, arg.Name);
+
+            arg = new TypeArgument(typeof(PublicNested), bitness);
+            Assert.AreEqual(name, arg.ContainingAssembly.Name);
+            Assert.AreEqual(location, arg.ContainingAssembly.Location);
+            Assert.AreEqual(bitness, arg.ContainingAssembly.Bitness);
+            Assert.AreEqual(typeof(PublicNested).FullName, arg.Name);
+
+            Func<Type, HostBitness, Action> ctor = (_type, _bitness) => { return () => { new TypeArgument(_type, _bitness); }; };
+
+            TestUtilities.AssertThrows(ctor(null, HostBitness.Current), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(GetType(), HostBitness.NotSet), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(TestInternalType), HostBitness.Current), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(TestInternalType.Nested), HostBitness.Current), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(PrivateNested), HostBitness.Current), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(GenericType<int>), HostBitness.Current), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(GenericType<int>.GenericNested), HostBitness.Current), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(GenericType<>), HostBitness.Current), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(typeof(GenericType<>).GetGenericArguments()[0], HostBitness.Current), typeof(ArgumentException));
+
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                TestUtilities.AssertThrows(ctor(GetType(), HostBitness.Force64), typeof(ArgumentException));
+            }
+        }
+
+        /// <summary>
+        ///A test for TypeArgument Constructor
+        ///</summary>
+        [TestMethod()]
         public void TypeArgumentConstructorMethodTest()
         {
             string name = Assembly.GetExecutingAssembly().FullName;
             string location = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            TypeArgument arg = new TypeArgument(GetType().GetMethod("TypeArgumentConstructorMethodTest"));
+            HostBitness bitness = HostBitness.Native;
+            TypeArgument arg = new TypeArgument(GetType().GetMethod("TypeArgumentConstructorMethodTest"), bitness);
             Assert.AreEqual(name, arg.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingAssembly.Location);
+            Assert.AreEqual(bitness, arg.ContainingAssembly.Bitness);
             Assert.AreEqual(GetType().FullName, arg.Name);
 
-            arg = new TypeArgument(typeof(PublicNested).GetMethod("Method"));
+            arg = new TypeArgument(typeof(PublicNested).GetMethod("Method"), HostBitness.Current);
             Assert.AreEqual(name, arg.ContainingAssembly.Name);
             Assert.AreEqual(location, arg.ContainingAssembly.Location);
             Assert.AreEqual(typeof(PublicNested).FullName, arg.Name);
 
-            Func<MethodInfo, Action> ctor = (_type) => { return () => { new TypeArgument(_type); }; };
+            Func<MethodInfo, Action> ctor = (_type) => { return () => { new TypeArgument(_type, HostBitness.Current); }; };
 
             TestUtilities.AssertThrows(ctor(null), typeof(ArgumentNullException));
             TestUtilities.AssertThrows(ctor(typeof(TestInternalType).GetMethod("Method")), typeof(ArgumentException));
@@ -152,6 +230,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             Assert.AreEqual(arg.Name, arg2.Name);
             Assert.AreEqual(arg.ContainingAssembly.Name, arg2.ContainingAssembly.Name);
             // Location is not deserialized. Instead, the location is used in the AppDomain setup.
+            // Bitness is not deserialized. Instead, the bitness is used to determine which executable to run.
 
             // Wrap the calls into Actions.
             Func<Queue<String>, Action> ctor = (_args) => { return () => { new TypeArgument(_args); }; };

@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<TestSettings name="AssemblyHost" id="ac1420bf-88cb-43b1-a837-8fe6a0dfb18b" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+<TestSettings name="AssemblyHost" id="4306b2b1-431b-4950-a727-e0438eacb5f6" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
   <Description>Code coverage for AssemblyHost.</Description>
   <Deployment>
     <DeploymentItem filename="AssemblyHostLauncher32\bin\Test\AssemblyHostLauncher32.exe" />
   </Deployment>
-  <Execution hostProcessPlatform="MSIL">
+  <Execution>
     <TestTypeSpecific>
       <UnitTestRunConfig testTypeId="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b">
         <AssemblyResolution>

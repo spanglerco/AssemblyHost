@@ -42,6 +42,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             AssemblyArgument arg = new AssemblyArgument(location, name);
             Assert.AreEqual(name, arg.Name);
             Assert.AreEqual(location, arg.Location);
+            Assert.AreEqual(HostBitness.Current, arg.Bitness);
 
             // Wrap the constructor into an Action.
             Func<string, string, Action> ctor = (_location, _name) => { return () => { new AssemblyArgument(_location, _name); }; };
@@ -59,18 +60,58 @@ namespace SpanglerCo.UnitTests.AssemblyHost
         ///A test for AssemblyArgument Constructor
         ///</summary>
         [TestMethod()]
+        public void AssemblyArgumentConstructorBitnessTest()
+        {
+            string name = Assembly.GetExecutingAssembly().FullName;
+            string location = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            HostBitness bitness = HostBitness.Force32;
+            AssemblyArgument arg = new AssemblyArgument(location, name, bitness);
+            Assert.AreEqual(name, arg.Name);
+            Assert.AreEqual(location, arg.Location);
+            Assert.AreEqual(bitness, arg.Bitness);
+
+            // Wrap the constructor into an Action.
+            Func<string, string, HostBitness, Action> ctor = (_location, _name, _bitness) => { return () => { new AssemblyArgument(_location, _name, _bitness); }; };
+
+            TestUtilities.AssertThrows(ctor(null, name, HostBitness.Force32), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(location, null, HostBitness.Force32), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(null, null, HostBitness.Force32), typeof(ArgumentNullException));
+
+            TestUtilities.AssertThrows(ctor(string.Empty, name, HostBitness.Force32), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, string.Empty, HostBitness.Force32), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(location, name, HostBitness.NotSet), typeof(ArgumentException));
+            TestUtilities.AssertThrows(ctor(string.Empty, string.Empty, HostBitness.Force32), typeof(ArgumentException));
+
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                TestUtilities.AssertThrows(ctor(location, name, HostBitness.Force64), typeof(ArgumentException));
+            }
+        }
+
+        /// <summary>
+        ///A test for AssemblyArgument Constructor
+        ///</summary>
+        [TestMethod()]
         public void AssemblyArgumentConstructorTypeTest()
         {
             string name = Assembly.GetExecutingAssembly().FullName;
             string location = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            AssemblyArgument arg = new AssemblyArgument(GetType());
+            HostBitness bitness = HostBitness.Native;
+            AssemblyArgument arg = new AssemblyArgument(GetType(), bitness);
             Assert.AreEqual(name, arg.Name);
             Assert.AreEqual(location, arg.Location);
+            Assert.AreEqual(bitness, arg.Bitness);
 
             // Wrap the constructor into an Action.
-            Func<Type, Action> ctor = (_type) => { return () => { new AssemblyArgument(_type); }; };
+            Func<Type, HostBitness, Action> ctor = (_type, _bitness) => { return () => { new AssemblyArgument(_type, _bitness); }; };
 
-            TestUtilities.AssertThrows(ctor(null), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(null, HostBitness.Current), typeof(ArgumentNullException));
+            TestUtilities.AssertThrows(ctor(GetType(), HostBitness.NotSet), typeof(ArgumentException));
+
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                TestUtilities.AssertThrows(ctor(GetType(), HostBitness.Force64), typeof(ArgumentException));
+            }
         }
 
         /// <summary>
@@ -80,7 +121,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
         public void AddArgsTest()
         {
             List<string> argsOut = new List<string>();
-            AssemblyArgument arg = new AssemblyArgument(GetType());
+            AssemblyArgument arg = new AssemblyArgument(GetType(), HostBitness.Current);
             arg.AddArgs(argsOut);
             Assert.IsTrue(argsOut.Count > 0);
 
@@ -88,6 +129,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             AssemblyArgument arg2 = new AssemblyArgument(argsIn);
             Assert.AreEqual(arg.Name, arg2.Name);
             // Location is not deserialized. Instead, the location is used in the AppDomain setup.
+            // Bitness is not deserialized. Instead, the bitness is used to determine which executable to run.
 
             // Wrap the calls into Actions.
             Func<Queue<String>, Action> ctor = (_args) => { return () => { new AssemblyArgument(_args); }; };

@@ -107,12 +107,18 @@
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\CommonAssemblyInfo.cs">
+      <Link>Properties\CommonAssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="AssemblyArgument.cs" />
     <Compile Include="Child\InterfaceHostServer.cs" />
     <Compile Include="Child\WcfHostServer.cs" />
     <Compile Include="ExecutionMode.cs" />
+    <Compile Include="HostBitness.cs" />
     <Compile Include="IChildProcess.cs" />
     <Compile Include="InterfaceHostProcess.cs" />
+    <Compile Include="Internal\IAssemblyLocater.cs" />
+    <Compile Include="Internal\LauncherLocater.cs" />
     <Compile Include="IProgressReporter.cs" />
     <Compile Include="TypeArgument.cs" />
     <Compile Include="Ipc\ChildCommunication.cs" />

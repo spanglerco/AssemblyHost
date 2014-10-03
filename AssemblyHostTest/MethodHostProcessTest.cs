@@ -196,12 +196,14 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             // Additionally requires security attributes to opt-in.
             testExceptions("AccessViolation", typeof(AccessViolationException));
 
-            // Fast exit. Cannot be caught, nor does it invoke OS crash dialog.
-            testExceptions("BufferOverrun", typeof(TargetInvocationException));
+            // Kills the process without a chance to run finalizers or report errors.
+            testExceptions("Terminate", typeof(TargetInvocationException));
 
             // Note that despite documentation for the UnhandledException
             // event, stack overflow exceptions cannot be caught. Neither in
-            // .NET 3.5 nor 4.0.
+            // .NET 3.5 nor 4.0. Buffer overruns also cannot be caught and
+            // actually cause a fast exit for security protection. However,
+            // buffer overruns have proven difficult to trigger on purpose.
         }
 
         /// <summary>
@@ -224,21 +226,6 @@ namespace SpanglerCo.UnitTests.AssemblyHost
             }
 
             /// <summary>
-            /// Causes a buffer overrun.
-            /// </summary>
-            /// <remarks>
-            /// Will not throw an exception, nor even a crash dialog.
-            /// .NET terminates immediately for security.
-            /// </remarks>
-
-            public static unsafe void BufferOverrun()
-            {
-                // Out of bounds write. stackalloc will automatically enable buffer overrun detection.
-                int* buffer = stackalloc int[1];
-                buffer[10] = 5;
-            }
-
-            /// <summary>
             /// Causes an access violation.
             /// </summary>
             /// <exception cref="AccessViolationException">always</exception>
@@ -253,6 +240,15 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                 // We don't want a NullReferenceException, so access memory not managed by the CLR.
                 int* x = (int*)int.MaxValue;
                 *x = 5;
+            }
+
+            /// <summary>
+            /// Terminates the current process without a clean shutdown.
+            /// </summary>
+
+            public static void Terminate()
+            {
+                Process.GetCurrentProcess().Kill();
             }
         }
     }

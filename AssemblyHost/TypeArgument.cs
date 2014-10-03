@@ -77,6 +77,21 @@ namespace SpanglerCo.AssemblyHost
         /// <exception cref="ArgumentException">if assemblyLocation, assemblyName, or typeName is empty.</exception>
 
         public TypeArgument(string assemblyLocation, string assemblyName, string typeName)
+            : this(assemblyLocation, assemblyName, HostBitness.Current, typeName)
+        { }
+
+        /// <summary>
+        /// Creates a new argument.
+        /// </summary>
+        /// <param name="assemblyLocation">The path containing the assembly.</param>
+        /// <param name="assemblyName">The name of the assembly containing the type.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
+        /// <param name="typeName">The name of the type.</param>
+        /// <exception cref="ArgumentNullException">if assemblyLocation, assemblyName, or typeName are null.</exception>
+        /// <exception cref="ArgumentException">if assemblyLocation, assemblyName, or typeName is empty.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
+
+        public TypeArgument(string assemblyLocation, string assemblyName, HostBitness bitness, string typeName)
         {
             if (typeName == null)
             {
@@ -89,7 +104,7 @@ namespace SpanglerCo.AssemblyHost
             }
 
             Name = typeName;
-            ContainingAssembly = new AssemblyArgument(assemblyLocation, assemblyName);
+            ContainingAssembly = new AssemblyArgument(assemblyLocation, assemblyName, bitness);
         }
 
         /// <summary>
@@ -101,24 +116,40 @@ namespace SpanglerCo.AssemblyHost
 
         public TypeArgument(Type type)
         {
-            LoadFromType(type);
+            LoadFromType(type, HostBitness.Current);
+        }
+
+        /// <summary>
+        /// Creates a new argument.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
+        /// <exception cref="ArgumentNullException">if type is null.</exception>
+        /// <exception cref="ArgumentException">if type is generic or not public.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
+
+        public TypeArgument(Type type, HostBitness bitness)
+        {
+            LoadFromType(type, bitness);
         }
 
         /// <summary>
         /// Creates a new argument.
         /// </summary>
         /// <param name="method">A method whose declaring type will be used as the argument.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
         /// <exception cref="ArgumentNullException">if method is null.</exception>
         /// <exception cref="ArgumentException">if the type declaring the method is generic or not public.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
 
-        internal TypeArgument(MethodInfo method)
+        internal TypeArgument(MethodInfo method, HostBitness bitness)
         {
             if (method == null)
             {
                 throw new ArgumentNullException("method");
             }
 
-            LoadFromType(method.DeclaringType);
+            LoadFromType(method.DeclaringType, bitness);
         }
 
         /// <summary>
@@ -163,10 +194,12 @@ namespace SpanglerCo.AssemblyHost
         /// Initializes the argument from a type.
         /// </summary>
         /// <param name="type">The type to load.</param>
+        /// <param name="bitness">The bitness setting for the assembly.</param>
         /// <exception cref="ArgumentNullException">if type is null.</exception>
         /// <exception cref="ArgumentException">if type is generic or not public.</exception>
+        /// <exception cref="ArgumentException">if bitness is <see cref="HostBitness.Force64"/> when running on a 32-bit operating system.</exception>
 
-        private void LoadFromType(Type type)
+        private void LoadFromType(Type type, HostBitness bitness)
         {
             if (type == null)
             {
@@ -195,7 +228,7 @@ namespace SpanglerCo.AssemblyHost
                 throw new ArgumentException("type must be a public, non-generic type.", "type");
             }
 
-            ContainingAssembly = new AssemblyArgument(type);
+            ContainingAssembly = new AssemblyArgument(type, bitness);
             Name = type.FullName;
         }
     }

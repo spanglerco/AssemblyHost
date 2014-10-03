@@ -23,8 +23,8 @@ using System;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle(".NET Assembly Host")]
-[assembly: AssemblyDescription("Hosts a .NET assembly in a child process.")]
+[assembly: AssemblyTitle(".NET Assembly Host Launcher")]
+[assembly: AssemblyDescription("32-bit launcher for the AssemblyHost")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("SpanglerCo")]
 [assembly: AssemblyProduct("AssemblyHost")]
@@ -38,7 +38,7 @@ using System;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("28c23645-bb6e-4268-8ca9-0c6e98bd9c2d")]
+[assembly: Guid("acab0073-0efa-4914-bef5-94f5fccb972b")]
 
 // Version information for an assembly consists of the following four values:
 //

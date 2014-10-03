@@ -2,7 +2,7 @@
 <TestSettings name="AssemblyHost" id="ac1420bf-88cb-43b1-a837-8fe6a0dfb18b" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
   <Description>Code coverage for AssemblyHost.</Description>
   <Deployment>
-    <DeploymentItem filename="AssemblyHostLauncher32\bin\x86\Test\AssemblyHostLauncher32.exe" />
+    <DeploymentItem filename="AssemblyHostLauncher32\bin\Test\AssemblyHostLauncher32.exe" />
   </Deployment>
   <Execution hostProcessPlatform="MSIL">
     <TestTypeSpecific>

@@ -52,13 +52,25 @@ For examples of how to use the library in each mode, build and run the AssemblyH
 
 Note that the WaitStopped method will handle both steps 7 and 8 for you.
 
+## Hosting Assemblies Built for Various Platforms (Bitness)
+
+In order to be flexible, AssemblyHost is built for the "Any CPU" platform, which means on a 64-bit operating system it will create a 64-bit process but can still be loaded by a 32-bit process. However, a 64-bit process cannot load an assembly built for the x86 platform. To enable hosting 32-bit assemblies on a 64-bit OS, deploy the AssemblyHostLauncher32 assembly along with AssemblyHost. The launcher is a tiny executable that AssemblyHost invokes in order to create a 32-bit process before handing things over to AssemblyHost for the rest.
+
+By default, the child process created by AssemblyHost will match the same bitness as the parent process. This means even if the assembly to be hosted is built for any CPU, it may still load into a 32-bit process by default. When instantiating a host process class, you may optionally specify a HostBitness value to control the bitness of the child process:
+- __Native__ provides the same behavior as the Any CPU platform, meaning the child process will be 64-bit on a 64-bit OS. This is the pre-2.0 behavior and may be appropriate for assemblies built for any CPU.
+- __Current__ matches the bitness of the parent process and is the default in order to provide predictable behavior.
+- __Force32__ always makes a 32-bit child process. Use this option when the assembly being hosted is built for the x86 platform.
+- __Force64__ always makes a 64-bit child process, or throws an exception at run-time on a 32-bit OS. Use this option when the assembly being hosted is built for the x64 platform.
+
+Note that when the child process is 64-bit, the launcher is not required to be deployed. To avoid unexpected run-time errors, explicitly use Force64 when not deploying the launcher.
+
 # Building the Library
 
 One difficulty in providing open source .NET code is with strong naming of assemblies. Microsoft recommends signing all assemblies, and doing so restricts that assembly to only being able to reference other signed assemblies. Rather than adding a private key to the repository (which defeats the purpose), there are ways to build the assembly with your own key. Note that strongly named assemblies signed with different keys are not interchangeable at run time; the client must choose which one to use at compile time.
 
 ## Debug Builds
 
-First a note about debug builds. Using a debug build of AssemblyHost will cause the child process to trigger a breakpoint when it starts. You must either attach and continue or the child process will crash (i.e. you decline to attach or there is no debugger installed). See Main in Child\Program.cs.
+As of 2.0, the debug build of AssemblyHost no longer automatically triggers a breakpoint. To debug the child process, see the Main in Child\Program.cs for enabling a breakpoint allowing you to attach a debugger when the child process is created.
 
 ## Unsigned
 
@@ -78,10 +90,19 @@ __Note:__ Be sure to do a clean build when switching between Signed and Unsigned
 
 You can verify if the build assembly is signed or not by opening a Visual Studio command prompt and running `sn -T <path-to-AssemblyHost.exe>`. For an unsigned build, you get a message indicating it is not strongly named. For a signed build, you will see the public token which should correspond to the key used to sign it.
 
+__Important:__ When creating a signed build, it is required that AssemblyHost and the AssemblyHostLauncher32 use the same key. Running msbuild from the directory containing the solution will build both projects, but be sure to get the output from the launcher's bin directory (both assemblies will be there).
+
 ## Code Analysis
 
 The Analysis build configuration has code analysis enabled. Note that this configuration should not be used when building an unsigned assembly or you will receive a large number of warnings.
 
 ## Unit Tests
 
-Conversely, the Test build configuration will always produce an unsigned assembly regardless of the SigningKey variable. This is the only build configuration that includes the AssemblyHostTest project, which contains all of the unit tests for AssemblyHost.
+Conversely, the Test and Test32 build configurations will always produce an unsigned assembly regardless of the SigningKey variable. These are the only build configurations that include the AssemblyHostTest project, which contains all of the unit tests for AssemblyHost. The Test configuration produces 64-bit unit tests, while Test32 produces 32-bit tests. Additionally, there are two testsettings files: AssemblyHost.testsettings will run the tests in a 64-bit process, while AssemblyHost32.testsettings will run in a 32-bit process.
+
+When running the tests, the following configurations should all pass:
+- Test + AssemblyHost.testsettings: 64-bit process that creates 64-bit child processes hosting an Any CPU assembly
+- Test + AssemblyHost32.testsettings: 32-bit process that creates 32-bit child processes hosting an Any CPU assembly
+- Test32 + AssemblyHost32.testsettings: 32-bit process that creates 32-bit child processes hosting an x86 assembly
+
+Some tests will momentarily open a console window. This is intentional.

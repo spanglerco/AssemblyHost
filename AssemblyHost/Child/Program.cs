@@ -41,7 +41,7 @@ namespace SpanglerCo.AssemblyHost.Child
 
         private static void Main(string[] args)
         {
-#if DEBUG && !TEST
+#if UNUSED // Used for debugging the child process. Remove this #if to enable.
             System.Diagnostics.Debugger.Launch();
 #endif
 

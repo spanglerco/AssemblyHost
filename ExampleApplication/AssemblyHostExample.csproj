@@ -115,6 +115,7 @@
     <Compile Include="Examples\InterfaceThread.cs" />
     <Compile Include="Examples\WCF.cs" />
     <Compile Include="Examples\WCFAdvanced.cs" />
+    <Compile Include="Examples\WCFDuplex.cs" />
     <Compile Include="Utility\AutoScrollBehavior.cs" />
     <Compile Include="Utility\DelegateCommand.cs" />
     <Compile Include="Utility\InitialFocusBehavior.cs" />

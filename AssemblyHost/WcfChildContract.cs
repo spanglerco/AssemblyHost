@@ -24,7 +24,7 @@ namespace SpanglerCo.AssemblyHost
     /// </summary>
     /// <typeparam name="TContract">An interface with the ServiceContract attribute being wrapped.</typeparam>
 
-    public class WcfChildContract<TContract> : IDisposable
+    public sealed class WcfChildContract<TContract> : IDisposable
         where TContract : class
     {
         private TContract _contract;
@@ -87,34 +87,42 @@ namespace SpanglerCo.AssemblyHost
 
         public void Dispose()
         {
-            Dispose(true);
+            DoDispose();
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Finalizer to dispose the channel.
+        /// </summary>
+
+        ~WcfChildContract()
+        {
+            DoDispose();
         }
 
         /// <summary>
         /// Releases the resources being used by this instance.
         /// </summary>
-        /// <param name="disposing">True if Dispose was called.</param>
+        /// 
 
-        private void Dispose(bool disposing)
+        private void DoDispose()
         {
-            if (disposing)
-            {
-                if (_object != null)
-                {
-                    try
-                    {
-                        _object.Close();
-                    }
-                    catch (CommunicationException)
-                    {
-                        _object.Abort();
-                    }
-                }
+            // Want to explicitly close or abort regardless of disposing.
 
-                _object = null;
-                _contract = null;
+            if (_object != null)
+            {
+                try
+                {
+                    _object.Close();
+                }
+                catch (CommunicationException)
+                {
+                    _object.Abort();
+                }
             }
+
+            _object = null;
+            _contract = null;
         }
     }
 }

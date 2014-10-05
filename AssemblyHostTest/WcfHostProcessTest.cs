@@ -118,18 +118,32 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                         Assert.AreEqual(value + 1, contract.Contract.GetValue());
                     }
 
-                    using (WcfChildContract<ITestContract2> contract2 = process.CreateChannel<ITestContract2>())
+                    using (Callbacks callbacks = new Callbacks())
                     {
-                        value = 2772;
-                        contract2.Contract.SetValue(value);
-                    }
+                        using (WcfChildContract<IDuplexContract> duplex = process.CreateChannel<IDuplexContract>(callbacks))
+                        {
+                            duplex.Contract.NotifyValueChanged(5000);
+                            Assert.IsTrue(callbacks.WaitForNotify(5000));
 
-                    using (WcfChildContract<ITestContract> contract = process.CreateChannel<ITestContract>())
-                    {
-                        Assert.AreEqual(value, contract.Contract.GetValue());
+                            using (WcfChildContract<ITestContract2> contract2 = process.CreateChannel<ITestContract2>())
+                            {
+                                value = 2772;
+                                contract2.Contract.SetValue(value);
+                            }
+
+                            using (WcfChildContract<ITestContract> contract = process.CreateChannel<ITestContract>())
+                            {
+                                Assert.AreEqual(value, contract.Contract.GetValue());
+                            }
+
+                            Assert.IsTrue(callbacks.WaitForNotify(5000));
+                            Assert.IsTrue(callbacks.Complete);
+                            Assert.AreEqual(value, callbacks.LastValue);
+                        }
                     }
 
                     TestUtilities.AssertThrows(() => { process.CreateChannel<INonContract>(); }, typeof(InvalidOperationException));
+                    TestUtilities.AssertThrows(() => { process.CreateChannel<INonContract>(null); }, typeof(InvalidOperationException));
                     TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
 
                     process.Stop();
@@ -140,6 +154,7 @@ namespace SpanglerCo.UnitTests.AssemblyHost
 
                     TestUtilities.AssertThrows(() => { process.Start(false); }, typeof(InvalidOperationException));
                     TestUtilities.AssertThrows(() => { process.CreateChannel<ITestContract>(); }, typeof(InvalidOperationException));
+                    TestUtilities.AssertThrows(() => { process.CreateChannel<ITestContract>(null); }, typeof(InvalidOperationException));
                 }
 
                 if (backgroundEx != null)
@@ -190,6 +205,67 @@ namespace SpanglerCo.UnitTests.AssemblyHost
                     Assert.IsTrue(waitEvent.WaitOne(10000));
                     Assert.IsTrue(process.ChildProcess.WaitForExit(10000));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Implements the callbacks for the <see cref="IDuplexContract"/> service.
+        /// </summary>
+
+        private class Callbacks : ICallbackContract, IDisposable
+        {
+            private AutoResetEvent _readyEvent = new AutoResetEvent(false);
+
+            /// <summary>
+            /// Gets whether or not NotifyDone has been called.
+            /// </summary>
+
+            public bool Complete { get; private set; }
+
+            /// <summary>
+            /// Gets the last value passed to ValueChanged.
+            /// </summary>
+
+            public int LastValue { get; private set; }
+
+            /// <summary>
+            /// Waits for the next notify callback.
+            /// </summary>
+            /// <param name="milliseconds">The maximum amount of time to wait.</param>
+            /// <returns>True on notify, false on timeout.</returns>
+
+            public bool WaitForNotify(int milliseconds)
+            {
+                return _readyEvent.WaitOne(milliseconds);
+            }
+
+            /// <see cref="ICallbackContract.NotifyReady"/>
+
+            public void NotifyReady()
+            {
+                _readyEvent.Set();
+            }
+
+            /// <see cref="ICallbackContract.ValueChanged"/>
+
+            public void ValueChanged(int newValue)
+            {
+                LastValue = newValue;
+            }
+
+            /// <see cref="ICallbackContract.NotifyDone"/>
+
+            public void NotifyDone()
+            {
+                Complete = true;
+                _readyEvent.Set();
+            }
+
+            /// <see cref="IDisposable.Dispose"/>
+
+            public void Dispose()
+            {
+                _readyEvent.Dispose();
             }
         }
     }

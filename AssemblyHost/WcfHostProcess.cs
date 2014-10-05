@@ -128,6 +128,36 @@ namespace SpanglerCo.AssemblyHost
             return new WcfChildContract<TContract>(ChannelFactory<TContract>.CreateChannel(new NetNamedPipeBinding(), new EndpointAddress(_serviceAddress)));
         }
 
+        /// <summary>
+        /// Creates a duplex channel for communicating with the WCF service in the child process.
+        /// </summary>
+        /// <typeparam name="TContract">An interface with the ServiceContract attribute implemented by the type loaded in the child process.</typeparam>
+        /// <param name="callbackObject">An object that implements one or more callback interfaces used by TContract.</param>
+        /// <returns>The created channel.</returns>
+        /// <exception cref="InvalidOperationException">if the child process is not executing.</exception>
+        /// <exception cref="InvalidOperationException">if TContract is not a WCF ServiceContract.</exception>
+        /// <exception cref="CommunicationException">if the host is unable to establish a WCF connection to the child process.</exception>
+        /// <remarks>
+        /// This overload specifies a callback object, which is used when TContract's <see cref="ServiceContractAttribute"/>
+        /// specifies a CallbackContract. callbackObject should implement that callback contract.
+        /// This method does not validate that callbackObject actually implements the callback contract,
+        /// nor does it validate that TContract even has a CallbackContract.
+        /// This method does not validate that the child actually implements TContract.
+        /// Callers should catch CommunicationException when making method calls on the contract.
+        /// </remarks>
+
+        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "object",
+            Justification="callbackObject matches the CreateChannel API. Can't use callbackInstance because that has a different meaning in this context.")]
+        public WcfChildContract<TContract> CreateChannel<TContract>(object callbackObject) where TContract : class
+        {
+            if (Status != HostProcessStatus.Executing)
+            {
+                throw new InvalidOperationException("The child process is not executing.");
+            }
+
+            return new WcfChildContract<TContract>(DuplexChannelFactory<TContract>.CreateChannel(callbackObject, new NetNamedPipeBinding(), new EndpointAddress(_serviceAddress)));
+        }
+
         /// <see cref="HostProcess.Dispose(bool)"/>
 
         protected override void Dispose(bool disposing)

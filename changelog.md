@@ -8,6 +8,7 @@ The current released version of AssemblyHost is 1.1.0.0.
 Source compatible with 1.1.0.0 unless code registered for the HostProgress event with a non-InterfaceHostProcess reference. Not binary compatible.
 
 - Added AssemblyHostLauncher32 which enables hosting 32-bit assemblies on a 64-bit operating system. __Behavior change:__ if the parent process is 32-bit, the child process will also be 32-bit by default, where previous a 64-bit child process was always created. Use the new HostBitness parameter when creating a host process to control the bitness of the child process.
+- Added the ability to host duplex WCF services using an overload of CreateChannel on WcfHostProcess to pass in a callback object.
 - Moved the HostProgress event from HostProcess to InterfaceHostProcess to clean up the API a bit.
 
 # 1.1.0.0 (Released September 27, 2014)
